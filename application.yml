@@ -1,4 +1,4 @@
 spring.datasource.url: jdbc:mysql://localhost:3306/blogdb?serverTimezone=UTC&useSSL=false
 spring.datasource.username: root
 spring.datasource.password: TestTest
-spring.jpa.hibernate.ddl-auto: update
+spring.jpa.hibernate.ddl-auto: create-drop

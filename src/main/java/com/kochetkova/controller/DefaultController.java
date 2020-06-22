@@ -1,4 +1,4 @@
-package controller;
+package com.kochetkova.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 
