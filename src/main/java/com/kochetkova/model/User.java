@@ -3,6 +3,9 @@ package com.kochetkova.model;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -32,6 +35,18 @@ public class User {
     private String code;
 
     private String photo;
+
+    @OneToMany(mappedBy = "user")
+    private Set<Post> userPosts;
+
+    @OneToMany(mappedBy = "moderator")
+    private Set<Post> moderationPosts;
+
+    @OneToMany(mappedBy = "moderator")
+    private Set<Post> votes;
+
+    @OneToMany(mappedBy = "user")
+    private Set<PostComment> comments;
 
     public int getId() {
         return id;

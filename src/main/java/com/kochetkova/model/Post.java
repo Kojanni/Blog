@@ -3,6 +3,7 @@ package com.kochetkova.model;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "posts")
@@ -20,12 +21,14 @@ public class Post {
     @NotNull
     private ModerationStatus moderationStatus;
 
-    @Column(name = "moderator_id")
-    private int moderatorId;
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "moderator_id")
+    private User moderator;
 
-    @Column(name = "user_id")
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
     @NotNull
-    private int userId;
+    private User user;
 
     @NotNull
     private LocalDateTime time;
@@ -38,6 +41,15 @@ public class Post {
 
     @NotNull
     private int viewCount;
+
+    @OneToMany(mappedBy = "post")
+    private Set<PostVote> votes;
+
+    @OneToMany(mappedBy = "post")
+    private Set<TagToPost> tags;
+
+    @OneToMany(mappedBy = "post")
+    private Set<PostComment> comments;
 
     public int getId() {
         return id;
@@ -59,20 +71,20 @@ public class Post {
         this.moderationStatus = moderationStatus;
     }
 
-    public int getModeratorId() {
-        return moderatorId;
+    public User getModeratorId() {
+        return moderator;
     }
 
-    public void setModeratorId(int moderatorId) {
-        this.moderatorId = moderatorId;
+    public void setModeratorId(User moderator) {
+        this.moderator = moderator;
     }
 
-    public int getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(int userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public LocalDateTime getTime() {

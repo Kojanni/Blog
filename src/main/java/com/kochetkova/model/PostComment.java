@@ -14,13 +14,15 @@ public class PostComment {
     @Column(name = "parent_id")
     private int parentId;
 
-    @Column(name = "post_id")
+    @ManyToOne
+    @JoinColumn(name = "post_id")
     @NotNull
-    private int postId;
+    private Post post;
 
-    @Column(name = "user_id")
+    @ManyToOne
+    @JoinColumn(name = "user_id")
     @NotNull
-    private int userId;
+    private User user;
 
     @NotNull
     private LocalDateTime time;
@@ -28,47 +30,5 @@ public class PostComment {
     @NotNull
     private String text;
 
-    public int getId() {
-        return id;
-    }
 
-    public int getParentId() {
-        return parentId;
-    }
-
-    public void setParentId(int parentId) {
-        this.parentId = parentId;
-    }
-
-    public int getPostId() {
-        return postId;
-    }
-
-    public void setPostId(int postId) {
-        this.postId = postId;
-    }
-
-    public int getUserId() {
-        return userId;
-    }
-
-    public void setUserId(int userId) {
-        this.userId = userId;
-    }
-
-    public LocalDateTime getTime() {
-        return time;
-    }
-
-    public void setTime(LocalDateTime time) {
-        this.time = time;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
 }

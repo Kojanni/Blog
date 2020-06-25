@@ -2,6 +2,7 @@ package com.kochetkova.model;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.util.Set;
 
 @Entity
 @Table(name = "tags")
@@ -12,6 +13,9 @@ public class Tag {
 
     @NotNull
     private String name;
+
+    @OneToMany(mappedBy = "tag")
+    private Set<TagToPost> posts;
 
     public int getId() {
         return id;
