@@ -2,9 +2,9 @@ package com.kochetkova.api.response;
 
 import java.util.List;
 
-public class SortedPosts {
+public class SortedPostsByParam {
     private int count;
-    private List<Post> posts;
+    private List<PostByParam> posts;
 
     public int getCount() {
         return count;
@@ -14,15 +14,13 @@ public class SortedPosts {
         this.count = count;
     }
 
-    public List<Post> getPosts() {
+    public List<PostByParam> getPosts() {
         return posts;
     }
 
-    public void setPosts(List<Post> posts) {
+    public void setPosts(List<PostByParam> posts) {
         this.posts = posts;
     }
 
-    public void addPost(Post post) {
-        posts.add(post);
-    }
+
 }

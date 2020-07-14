@@ -45,6 +45,7 @@ public class ApiAuthController {
     //Регистрация
     @PostMapping("/register")
     public ResponseEntity<Object> registerNewUser() {
+
         //todo
         return null;
     }

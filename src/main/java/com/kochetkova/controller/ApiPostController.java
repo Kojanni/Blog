@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class ApiPostController {
 
     @GetMapping("")
-    public ResponseEntity<Object> getPostsList (){
+    public ResponseEntity<Object> getPostsList (@RequestParam String mode, @RequestParam int offset, @RequestParam int limit){
         SortedPosts sortedPosts = new SortedPosts();
 
         return new ResponseEntity<>(sortedPosts, HttpStatus.OK);

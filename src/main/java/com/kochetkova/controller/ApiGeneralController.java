@@ -1,7 +1,7 @@
 package com.kochetkova.controller;
 
 import com.kochetkova.api.response.BlogInfo;
-import com.kochetkova.api.response.Statistics;
+import com.kochetkova.api.response.TagWeight;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -12,12 +12,15 @@ import javax.websocket.server.PathParam;
 @Controller
 @RequestMapping("/api")
 public class ApiGeneralController {
+    private final BlogInfo blogInfo;
+
+    public ApiGeneralController(BlogInfo blogInfo) {
+        this.blogInfo = blogInfo;
+    }
 
     @GetMapping("/init")
     public ResponseEntity<Object> getDescription() {
-        BlogInfo blogDescription = new BlogInfo();
-
-        return new ResponseEntity<>(blogDescription, HttpStatus.OK);
+        return new ResponseEntity<>(blogInfo, HttpStatus.OK);
     }
 //загружает картинку на сервер, возвращает путь до изображения
 //    @PostMapping("/image")
@@ -35,12 +38,15 @@ public class ApiGeneralController {
 //    }
 
 
-//    @GetMapping("/tag/")
-//    public ResponseEntity<Object> getTag(@PathParam("query") String query) {
-//        //todo
-//        return null;
-//    }
-//
+    @GetMapping("/tag")
+    public ResponseEntity<Object> getTagByQuery(@PathParam("query") String query) {
+        //todo
+        TagWeight tagWeight = new TagWeight();
+        return new ResponseEntity<>(tagWeight, HttpStatus.OK);
+    }
+
+
+
 //    @PostMapping("/moderation")
 //    public ResponseEntity<Object> postModerationStatus(@PathParam("query") String query) {
 //        //todo
