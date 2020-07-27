@@ -17,3 +17,7 @@ blog:
   email: kjanni22@gmail.com
   copyright: Кочеткова Евгения
   copyrightFrom: 2020
+
+db:
+  captcha:
+    lifetime: 60
