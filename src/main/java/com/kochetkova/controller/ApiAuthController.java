@@ -1,5 +1,6 @@
 package com.kochetkova.controller;
 
+import com.kochetkova.api.request.Login;
 import com.kochetkova.api.request.NewUser;
 import com.kochetkova.api.response.AuthUser;
 import com.kochetkova.api.response.Captcha;
@@ -17,13 +18,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Controller
 @RequestMapping("/api/auth")
 public class ApiAuthController {
     private CaptchaCodeService captchaCodeService;
     private UserService userService;
+    private static Map<String, Integer> sessions = new HashMap<>();
 
     @Autowired
     public ApiAuthController(CaptchaCodeService captchaCodeService, UserService userService) {
@@ -33,27 +42,51 @@ public class ApiAuthController {
 
     //ВХОД
     @PostMapping("/login")
-    public ResponseEntity<Object> login() {
-        //todo
+    public ResponseEntity<AuthUser> login(HttpServletRequest request, @RequestBody Login login) {
+        AuthUser authUser = new AuthUser();
+        com.kochetkova.model.User userInfo = userService.findUserByEmail(login.getEmail());
 
-        return null;
+        if (!(userInfo == null || !userInfo.getPassword().contains(login.getPassword()))) {
+            User.UserBuilder userBuilder = User.builder();
+            userBuilder.id(userInfo.getId());
+            userBuilder.name(userInfo.getName());
+            userBuilder.photo(userInfo.getPhoto());
+            userBuilder.email(userInfo.getEmail());
+            if (userInfo.getIsModerator() == 1) {
+                userBuilder.moderation(true);
+                userBuilder.setting(true);
+            }
+            userBuilder.moderationCount(userInfo.getModerationPosts().size());
+
+            String sessionId = request.getRequestedSessionId();
+            sessions.put(sessionId, userInfo.getId());
+
+            authUser.setResult(true);
+            authUser.setUser(userBuilder.build());
+        }
+        return new ResponseEntity<>(authUser, HttpStatus.OK);
     }
 
     //статус авторизации
     @GetMapping("/check")
-    public ResponseEntity<AuthUser> checkAuthStatus() {
+    public ResponseEntity<AuthUser> checkAuthStatus(HttpServletRequest request) {
         AuthUser authUser = new AuthUser();
         User.UserBuilder userBuilder = User.builder();
-        userBuilder.id(576);
-        userBuilder.name("Дмитрий Петров");
-        userBuilder.photo("/avatars/ab/cd/ef/52461.jpg");
-        userBuilder.email("petrov@petroff.ru");
-        userBuilder.moderation(true);
-        userBuilder.moderationCount(56);
-        userBuilder.setting(true);
-        //authUser.setResult(true);
-        //authUser.setUser(userBuilder.build());
-        //todo
+        String sessionId = request.getRequestedSessionId();
+        if (sessions.containsKey(sessionId)) {
+            com.kochetkova.model.User userInfo = userService.findUserById(sessions.get(sessionId));
+            userBuilder.id(userInfo.getId());
+            userBuilder.name(userInfo.getName());
+            userBuilder.photo(userInfo.getPhoto());
+            userBuilder.email(userInfo.getEmail());
+            if (userInfo.getIsModerator() == 1) {
+                userBuilder.moderation(true);
+                userBuilder.setting(true);
+            }
+            userBuilder.moderationCount(userInfo.getModerationPosts().size());
+            authUser.setResult(true);
+            authUser.setUser(userBuilder.build());
+        }
         return new ResponseEntity<>(authUser, HttpStatus.OK);
     }
 
@@ -81,7 +114,7 @@ public class ApiAuthController {
             errorBuilder.captcha("Код с картинки введен неверно");
             result.setResult(false);
         }
-        if (userService.isPresent(newUser)) {
+        if (userService.isPresentUserByEmail(newUser.getEmail())) {
             errorBuilder.password("Этот e-mail уже зарегистрирован");
             result.setResult(false);
         }

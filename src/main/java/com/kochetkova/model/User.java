@@ -4,6 +4,7 @@ import com.kochetkova.api.request.NewUser;
 import lombok.Data;
 
 import javax.persistence.*;
+import javax.transaction.Transactional;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -41,10 +42,11 @@ public class User {
     private String photo;
 
     @OneToMany(mappedBy = "user")
+
     private Set<Post> userPosts;
 
-    @OneToMany(mappedBy = "moderator")
-    private Set<Post> moderationPosts;
+    @OneToMany(mappedBy = "moderator", fetch = FetchType.EAGER)
+    private Set<Post> moderationPosts = new HashSet<>();
 
     @OneToMany(mappedBy = "moderator")
     private Set<Post> votes;
@@ -61,6 +63,5 @@ public class User {
         this.password = newUser.getPassword();
         this.regTime = LocalDateTime.now();
         this.isModerator = 0;
-
     }
 }

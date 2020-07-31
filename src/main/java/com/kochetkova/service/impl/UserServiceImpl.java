@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean addNewUser(NewUser newUser) {
-        if (checkUserData(newUser) && !isPresent(newUser)) {
+        if (checkUserData(newUser) && !isPresentUserByEmail(newUser.getEmail())) {
             User user = new User(newUser);
             userRepository.save(user);
             return true;
@@ -34,45 +34,42 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean isPresent(NewUser newUser) {
-        Optional<User> user = userRepository.findByEmail(newUser.getEmail());
-        if (user.isPresent()) {
-            return true;
-        }
-        return false;
+    public User findUserByEmail(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        return user.orElse(null);
+    }
+
+    @Override
+    public User findUserById(Integer id) {
+        Optional<User> user = userRepository.findById(id);
+        return user.orElse(null);
+    }
+
+    @Override
+    public boolean isPresentUserByEmail(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        return user.isPresent();
     }
 
     @Override
     public boolean checkUserData(NewUser user) {
-        if (user.getEmail().matches(EMAIL_REG)
+        return user.getEmail().matches(EMAIL_REG)
                 && user.getPassword().matches(PASSWORD_REG)
-                && user.getName().matches(NAME_REG) ) {
-            return true;
-        }
-        return false;
+                && user.getName().matches(NAME_REG);
     }
 
     @Override
     public boolean checkPassword(String password) {
-        if ( password.matches(PASSWORD_REG)) {
-            return true;
-        }
-        return false;
+        return password.matches(PASSWORD_REG);
     }
 
     @Override
     public boolean checkName(String name) {
-        if ( name.matches(NAME_REG) ) {
-            return true;
-        }
-        return false;
+        return name.matches(NAME_REG);
     }
 
     @Override
     public boolean checkEmail(String email) {
-        if (email.matches(EMAIL_REG)) {
-            return true;
-        }
-        return false;
+        return email.matches(EMAIL_REG);
     }
 }
