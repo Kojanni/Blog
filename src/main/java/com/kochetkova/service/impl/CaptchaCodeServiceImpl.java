@@ -14,12 +14,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 
 import org.imgscalr.Scalr;
 
@@ -74,6 +69,15 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
 
         insertCaptchaInDB(token, secretKey);
         return captcha;
+    }
+
+    @Override
+    public boolean checkCaptcha(String captcha, String secretCode) {
+        Optional<CaptchaCode> captchaCode = captchaCodeRepository.findBySecretCode(secretCode);
+        if (captchaCode.isPresent() && captchaCode.get().getCode().matches(captcha)) {
+            return true;
+        }
+        return false;
     }
 
     private String getSecretKey(int length) {

@@ -1,5 +1,8 @@
 package com.kochetkova.model;
 
+import com.kochetkova.api.request.NewUser;
+import lombok.Data;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -8,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
+@Data
 @Table(name = "users")
 public class User {
     @Id
@@ -48,67 +52,15 @@ public class User {
     @OneToMany(mappedBy = "user")
     private Set<PostComment> comments;
 
-    public int getId() {
-        return id;
+    public User() {
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public User(NewUser newUser) {
+        this.name = newUser.getName();
+        this.email = newUser.getEmail();
+        this.password = newUser.getPassword();
+        this.regTime = LocalDateTime.now();
+        this.isModerator = 0;
 
-    public Byte getIsModerator() {
-        return isModerator;
-    }
-
-    public void setIsModerator(Byte isModerator) {
-        this.isModerator = isModerator;
-    }
-
-    public LocalDateTime getRegTime() {
-        return regTime;
-    }
-
-    public void setRegTime(LocalDateTime regTime) {
-        this.regTime = regTime;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getPhoto() {
-        return photo;
-    }
-
-    public void setPhoto(String photo) {
-        this.photo = photo;
     }
 }

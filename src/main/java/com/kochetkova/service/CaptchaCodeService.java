@@ -6,5 +6,6 @@ import java.io.IOException;
 
 public interface CaptchaCodeService {
     Captcha getCaptcha() throws IOException;
+    boolean checkCaptcha(String captcha, String secretCode);
 
 }

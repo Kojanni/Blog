@@ -1,87 +1,37 @@
 package com.kochetkova.api.response;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Builder;
+import lombok.Data;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+@Data
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Post {
-    private int id;
+    private Integer id;
     private LocalDateTime time;
     private User user;
     private String title;
     private String announce;
-    private int likeCount;
-    private int dislikeCount;
-    private int commentCount;
-    private int viewCount;
+    private Integer likeCount;
+    private Integer dislikeCount;
+    private Integer commentCount;
+    private Integer viewCount;
 
-    public int getId() {
-        return id;
-    }
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<Comment> comments;
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<String> tags;
 
-    public LocalDateTime getTime() {
-        return time;
-    }
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Set<Integer> years;
 
-    public void setTime(LocalDateTime time) {
-        this.time = time;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getAnnounce() {
-        return announce;
-    }
-
-    public void setAnnounce(String announce) {
-        this.announce = announce;
-    }
-
-    public int getLikeCount() {
-        return likeCount;
-    }
-
-    public void setLikeCount(int likeCount) {
-        this.likeCount = likeCount;
-    }
-
-    public int getDislikeCount() {
-        return dislikeCount;
-    }
-
-    public void setDislikeCount(int dislikeCount) {
-        this.dislikeCount = dislikeCount;
-    }
-
-    public int getCommentCount() {
-        return commentCount;
-    }
-
-    public void setCommentCount(int commentCount) {
-        this.commentCount = commentCount;
-    }
-
-    public int getViewCount() {
-        return viewCount;
-    }
-
-    public void setViewCount(int viewCount) {
-        this.viewCount = viewCount;
-    }
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Map<String, Integer> posts;
 }

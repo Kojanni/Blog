@@ -1,22 +1,14 @@
 package com.kochetkova.api.request;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
+
+@Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EditProfile {
     private String name;
     private String email;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    private String password;
+    private String photo;
+    private Integer removePhoto;
 }

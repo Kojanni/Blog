@@ -1,5 +1,8 @@
 package com.kochetkova.api.response;
 
-public class AddedCommentOk {
+import lombok.Data;
+
+@Data
+public class AddedCommentId {
     private int id;
 }

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CaptchaCodeRepository extends CrudRepository<CaptchaCode, Integer> {
@@ -14,4 +15,6 @@ public interface CaptchaCodeRepository extends CrudRepository<CaptchaCode, Integ
     void deleteByTimeLessThanEqual(LocalDateTime lifetime);
 
     List<CaptchaCode> findByTimeLessThanEqual(LocalDateTime lifetime);
+
+    Optional<CaptchaCode> findBySecretCode(String secretCode);
 }
