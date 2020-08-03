@@ -41,17 +41,16 @@ public class User {
 
     private String photo;
 
-    @OneToMany(mappedBy = "user")
-
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     private Set<Post> userPosts;
 
     @OneToMany(mappedBy = "moderator", fetch = FetchType.EAGER)
     private Set<Post> moderationPosts = new HashSet<>();
 
-    @OneToMany(mappedBy = "moderator")
+    @OneToMany(mappedBy = "moderator", fetch = FetchType.EAGER)
     private Set<Post> votes;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     private Set<PostComment> comments;
 
     public User() {

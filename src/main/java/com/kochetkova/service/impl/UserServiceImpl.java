@@ -7,20 +7,25 @@ import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     private static final String EMAIL_REG = "^([a-zA-Z0-9_\\-.]+)@([a-zA-Z0-9_\\-.]+)\\.([a-zA-Z]{2,5})$";
-
-    //не менее 6 символов, Содержит хотя бы одну цифру, хотя бы один нижний и один верхний char, хотя бы один char в наборе специальных символов (@#%$^ и т.д.), не содержит пробелов, вкладок и т.д.
-    private static final String PASSWORD_REG = "^.*(?=.{6,})(?=..*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@!~#$%^&+=]).*$";
     private static final String NAME_REG = "[A-ZА-Я][a-zа-я]+";
+    private static Map<String, Integer> sessions = new HashMap<>();
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    @Override
+    public void saveUser(User user) {
+        userRepository.save(user);
     }
 
     @Override
@@ -54,13 +59,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean checkUserData(NewUser user) {
         return user.getEmail().matches(EMAIL_REG)
-                && user.getPassword().matches(PASSWORD_REG)
+                && user.getPassword().length() >= 6
                 && user.getName().matches(NAME_REG);
     }
 
     @Override
     public boolean checkPassword(String password) {
-        return password.matches(PASSWORD_REG);
+        return password.length() >= 6;
     }
 
     @Override
@@ -71,5 +76,20 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean checkEmail(String email) {
         return email.matches(EMAIL_REG);
+    }
+
+    @Override
+    public void saveSession(String sessionId, int userId) {
+        sessions.put(sessionId, userId);
+    }
+
+    @Override
+    public boolean findAuthSession(String sessionId) {
+        return sessions.containsKey(sessionId);
+    }
+
+    @Override
+    public User findAuthUser(String sessionId) {
+        return findUserById(sessions.get(sessionId));
     }
 }

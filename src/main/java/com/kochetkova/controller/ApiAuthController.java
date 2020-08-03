@@ -2,11 +2,8 @@ package com.kochetkova.controller;
 
 import com.kochetkova.api.request.Login;
 import com.kochetkova.api.request.NewUser;
-import com.kochetkova.api.response.AuthUser;
-import com.kochetkova.api.response.Captcha;
 import com.kochetkova.api.response.Error;
-import com.kochetkova.api.response.ResultError;
-import com.kochetkova.api.response.User;
+import com.kochetkova.api.response.*;
 import com.kochetkova.service.CaptchaCodeService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,20 +16,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
 
 @Controller
 @RequestMapping("/api/auth")
 public class ApiAuthController {
     private CaptchaCodeService captchaCodeService;
     private UserService userService;
-    private static Map<String, Integer> sessions = new HashMap<>();
+
 
     @Autowired
     public ApiAuthController(CaptchaCodeService captchaCodeService, UserService userService) {
@@ -59,7 +50,7 @@ public class ApiAuthController {
             userBuilder.moderationCount(userInfo.getModerationPosts().size());
 
             String sessionId = request.getRequestedSessionId();
-            sessions.put(sessionId, userInfo.getId());
+            userService.saveSession(sessionId, userInfo.getId());
 
             authUser.setResult(true);
             authUser.setUser(userBuilder.build());
@@ -73,8 +64,8 @@ public class ApiAuthController {
         AuthUser authUser = new AuthUser();
         User.UserBuilder userBuilder = User.builder();
         String sessionId = request.getRequestedSessionId();
-        if (sessions.containsKey(sessionId)) {
-            com.kochetkova.model.User userInfo = userService.findUserById(sessions.get(sessionId));
+        if (userService.findAuthSession(sessionId)) {
+            com.kochetkova.model.User userInfo = userService.findAuthUser(sessionId);
             userBuilder.id(userInfo.getId());
             userBuilder.name(userInfo.getName());
             userBuilder.photo(userInfo.getPhoto());
@@ -127,7 +118,7 @@ public class ApiAuthController {
             result.setResult(false);
         }
         if (!userService.checkPassword(newUser.getPassword())) {
-            errorBuilder.password("Некорректный пароль");
+            errorBuilder.password("Пароль короче 6-ти символов");
             result.setResult(false);
         }
         if (result.isResult()) {

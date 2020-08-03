@@ -1,12 +1,17 @@
 package com.kochetkova.controller;
 
 import com.kochetkova.api.request.AcceptedPost;
+import com.kochetkova.api.request.EditProfile;
 import com.kochetkova.api.response.BlogInfo;
+import com.kochetkova.api.response.Error;
+import com.kochetkova.api.response.ResultError;
 import com.kochetkova.api.response.Settings;
 import com.kochetkova.api.response.TagWeight;
 import com.kochetkova.model.GlobalSetting;
+import com.kochetkova.model.User;
 import com.kochetkova.repository.SettingsRepository;
 import com.kochetkova.service.SettingsService;
+import com.kochetkova.service.UserService;
 import com.kochetkova.service.impl.SettingsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,11 +27,13 @@ import java.util.Optional;
 @RequestMapping("/api")
 public class ApiGeneralController {
     private final BlogInfo blogInfo;
-    @Autowired
     private SettingsService settingsService;
+    private UserService userService;
 
-
-    public ApiGeneralController(BlogInfo blogInfo) {
+    @Autowired
+    public ApiGeneralController(SettingsService settingsService, UserService userService, BlogInfo blogInfo) {
+        this.settingsService = settingsService;
+        this.userService = userService;
         this.blogInfo = blogInfo;
     }
 
@@ -58,7 +66,6 @@ public class ApiGeneralController {
     }
 
 
-
     @PostMapping("/moderation")
     public ResponseEntity<Object> postModerationStatus(@RequestParam(value = "query", required = false) String query,
                                                        @RequestBody AcceptedPost acceptedPost) {
@@ -72,12 +79,60 @@ public class ApiGeneralController {
 //        return null;
 //    }
 
-//    //Редактирование профиля
-//    @RequestMapping(value = "/profile/my", method = RequestMethod.GET, produces = {"application/json", "application/xml"})
-//    public ResponseEntity<Object> restorePassword(/*@RequestBody тут должен быть интерфейс общий и разходжится на 3 класса?*/) {
-//        //todo
-//        return null;
-//    }
+    //Редактирование профиля
+    @PostMapping("/profile/my")
+    public ResponseEntity<ResultError> editProfile(HttpServletRequest request, @RequestBody EditProfile editProfile) {
+        //todo
+        String sessionId = request.getRequestedSessionId();
+        ResultError resultError = new ResultError();
+        resultError.setResult(true);
+        Error.ErrorBuilder errorBuilder = Error.builder();
+
+        User user = userService.findAuthUser(sessionId);
+
+        if (userService.checkName(editProfile.getName())) {
+            if (!user.getName().contains(editProfile.getName())) {
+                user.setName(editProfile.getName());
+            }
+        } else {
+            errorBuilder.name("Имя указано неверно");
+            resultError.setResult(false);
+        }
+
+        if (!user.getEmail().contains(editProfile.getEmail())) {
+                if (userService.findUserByEmail(editProfile.getEmail()) == null) {
+                    user.setEmail(editProfile.getEmail());
+                } else {
+                    errorBuilder.email("Этот e-mail уже зарегистрирован");
+                    resultError.setResult(false);
+                }
+            }
+
+
+        if (editProfile.getPassword() != null) {
+            if (userService.checkPassword(editProfile.getPassword())) {
+                user.setPassword(editProfile.getPassword());
+            } else {
+                errorBuilder.password("Пароль короче 6 символов");
+                resultError.setResult(false);
+            }
+        }
+
+        if (editProfile.getRemovePhoto() == 1) {
+           /* if (editProfile.getPhoto().contains("")) {
+                //todo
+                //проверка фото, изменение размера
+                System.out.println("УДАЛИТЬ ФОТО");
+            } else {
+                System.out.println("ИЗМЕНИТЬ РАЗМЕР 36х36");
+            }*/
+        }
+        if (resultError.isResult()) {
+            userService.saveUser(user);
+        }
+        resultError.setErrors(errorBuilder.build());
+        return new ResponseEntity<>(resultError, HttpStatus.OK);
+    }
 
     //СТатистика для текущего пользователя
     @GetMapping("/statistics/my")
