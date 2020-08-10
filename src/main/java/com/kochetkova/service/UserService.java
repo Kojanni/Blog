@@ -1,7 +1,12 @@
 package com.kochetkova.service;
 
+import com.kochetkova.api.request.EditProfile;
 import com.kochetkova.api.request.NewUser;
+import com.kochetkova.api.response.Error;
+import com.kochetkova.api.response.ResultError;
 import com.kochetkova.model.User;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 
 public interface UserService {
@@ -14,8 +19,14 @@ public interface UserService {
     boolean checkPassword(String password);
     boolean checkName(String name);
     boolean checkEmail(String email);
+    Error checkEditProfile(User user, EditProfile editProfile);
+    User saveEditProfile(User user, EditProfile editProfile);
+    Error checkEditProfile(User user, String name, String email, String password, MultipartFile photo);
+    User saveEditProfile(User user, String name, String email, String password, MultipartFile photo, Integer removePhoto);
     void saveSession(String sessionId,int userId);
     boolean findAuthSession(String sessionId);
     User findAuthUser(String sessionId);
+    String savePhoto (User user, MultipartFile photo);
+    String deletePhoto(User user);
 
 }

@@ -14,6 +14,6 @@ public class EditProfile {
     private String name;
     private String email;
     private String password;
-    private MultipartFile photo;
+    private String photo;
     private Integer removePhoto;
 }
