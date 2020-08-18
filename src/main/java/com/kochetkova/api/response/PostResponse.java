@@ -12,10 +12,10 @@ import java.util.Set;
 @Data
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Post {
+public class PostResponse {
     private Integer id;
     private LocalDateTime time;
-    private User user;
+    private UserResponse userResponse;
     private String title;
     private String announce;
     private Integer likeCount;

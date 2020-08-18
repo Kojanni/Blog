@@ -6,6 +6,7 @@ import com.kochetkova.api.response.Error;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
 import com.kochetkova.service.UserService;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,8 +14,7 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.sql.rowset.serial.SerialBlob;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.sql.Blob;
 import java.sql.SQLException;
@@ -32,6 +32,9 @@ public class UserServiceImpl implements UserService {
 
     @Value("${photo.path}")
     private String photoPath;
+
+    @Value("${password.length.min}")
+    private int passwordLengthMin;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository) {
@@ -73,14 +76,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean checkUserData(NewUser user) {
-        return user.getEmail().matches(EMAIL_REG)
-                && user.getPassword().length() >= 6
-                && user.getName().matches(NAME_REG);
+        return checkEmail(EMAIL_REG)
+                && checkPassword(user.getPassword())
+                && checkName(NAME_REG);
     }
 
     @Override
     public boolean checkPassword(String password) {
-        return password.length() >= 6;
+        return password.length() >= passwordLengthMin;
     }
 
     @Override
@@ -125,7 +128,27 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Error checkEditProfile(User user, EditProfile editProfile) {
-        return checkEditProfile(user, editProfile.getName(), editProfile.getEmail(), editProfile.getPassword(), null);
+        Error.ErrorBuilder errorBuilder = Error.builder();
+
+        if (!user.getName().equals(editProfile.getName())) {
+            if (!checkName(editProfile.getName())) {
+                errorBuilder.name("Имя указано неверно");
+            }
+        }
+
+        if (!user.getEmail().equalsIgnoreCase(editProfile.getEmail())) {
+            if (findUserByEmail(editProfile.getEmail()) != null) {
+                errorBuilder.email("Этот e-mail уже зарегистрирован");
+            }
+        }
+
+        if (editProfile.getPassword() != null) {
+            if (!checkPassword(editProfile.getPassword())) {
+                errorBuilder.password("Пароль короче 6 символов");
+            }
+        }
+
+        return errorBuilder.build();
     }
 
     @Override
@@ -141,6 +164,7 @@ public class UserServiceImpl implements UserService {
         if (password != null) {
             user.setPassword(password);
         }
+
 
         if (removePhoto != null && removePhoto == 0) {
             //change photo
@@ -162,8 +186,13 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public void saveSession(String sessionId, int userId) {
-        sessions.put(sessionId, userId);
+    public void saveSession(String sessionId, User user) {
+        sessions.put(sessionId, user.getId());
+    }
+
+    @Override
+    public void deleteSession(String sessionId) {
+        sessions.remove(sessionId);
     }
 
     @Override
@@ -181,15 +210,23 @@ public class UserServiceImpl implements UserService {
         if (!photo.isEmpty()) {
             int id = user.getId();
 
+//            Blob blob = null;
+//            String str = null;
+//            StringBuffer strOut = new StringBuffer();
+//            try {
+//                byte[] bytes = photo.getBytes();
+//                blob = new SerialBlob(bytes);
+//                BufferedReader br = new BufferedReader(new InputStreamReader(blob.getBinaryStream()));
+//                while ((str=br.readLine())!=null) {
+//                    strOut.append(str);
+//                }
+//                return strOut.toString();
+//            } catch (SQLException | IOException throwables) {
+//                throwables.printStackTrace();
+//            }
+//            System.out.println(blob.toString() + blob );
+//            System.out.println(str);
 
-            try {
-                Blob blob= new SerialBlob(photo.getBytes());
-                System.out.println(blob.toString());
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
 
 
             int numberOfFolder = id / 100;
@@ -204,7 +241,7 @@ public class UserServiceImpl implements UserService {
                 e.printStackTrace();
             }
 
-            return fullPath;
+            return fullPath.replace("\\", "/");
         }
         return null;
     }

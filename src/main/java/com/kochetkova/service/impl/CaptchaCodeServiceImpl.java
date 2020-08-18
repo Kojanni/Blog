@@ -8,6 +8,7 @@ import com.kochetkova.repository.CaptchaCodeRepository;
 import com.kochetkova.service.CaptchaCodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -21,14 +22,21 @@ import org.imgscalr.Scalr;
 @Service
 public class CaptchaCodeServiceImpl implements CaptchaCodeService {
     private final CaptchaCodeRepository captchaCodeRepository;
-    private static int LENGTH_SK = 26;
-    private static int WIDTH = 120;
-    private static int HEIGHT = 42;
 
+    @Value("${captcha.length}")
+    private int lengthSecretKey;
 
+    @Value("${captcha.wordLength}")
+    private int wordLength;
 
-    @Value("${db.captcha.lifetime}")
-    private int lifetimeMinutes;
+    @Value("${captcha.width}")
+    private int width;
+
+    @Value("${captcha.height}")
+    private int height;
+
+    @Value("${captcha.lifetime}")
+    private int lifetime;
 
 
     @Autowired
@@ -38,50 +46,39 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
 
     @Override
     public Captcha getCaptcha() throws IOException {
-        clearOldCaptcha();
+        String token = generateToken(wordLength);
+        String secretKey = generateSecretKey(lengthSecretKey);
+
+        String encodedImage = encodeCaptcha(generateCaptcha(token));
 
         Captcha captcha = new Captcha();
-        Cage cage = new GCage();
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-
-        String token = cage.getTokenGenerator().next();
-        String secretKey = getSecretKey(LENGTH_SK);
-
-        try {
-            cage.draw(token, os);
-
-            byte[] bytesImage = os.toByteArray();
-            ByteArrayInputStream bis = new ByteArrayInputStream(bytesImage);
-
-            BufferedImage bImage = ImageIO.read(bis);
-            BufferedImage resizedImg = Scalr.resize(bImage, Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_TO_WIDTH, WIDTH, HEIGHT, Scalr.OP_BRIGHTER);
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ImageIO.write(resizedImg, "png", bos );
-            byte [] bytesResizedImg = bos.toByteArray();
-            String encodedImage = "data:image/png;base64," + Base64.getEncoder().encodeToString(bytesResizedImg);
-
-            captcha.setImage(encodedImage);
-            captcha.setSecret(secretKey);
-        } finally {
-            os.close();
-        }
+        captcha.setImage(encodedImage);
+        captcha.setSecret(secretKey);
 
         insertCaptchaInDB(token, secretKey);
         return captcha;
     }
 
+    private BufferedImage generateCaptcha(String token) throws IOException {
+        Cage cage = new GCage();
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        cage.draw(token, os);
+
+        byte[] bytesImage = os.toByteArray();
+        ByteArrayInputStream bis = new ByteArrayInputStream(bytesImage);
+
+        return resizeImage(ImageIO.read(bis));
+    }
+
     @Override
     public boolean checkCaptcha(String captcha, String secretCode) {
         Optional<CaptchaCode> captchaCode = captchaCodeRepository.findBySecretCode(secretCode);
-        if (captchaCode.isPresent() && captchaCode.get().getCode().matches(captcha)) {
-            return true;
-        }
-        return false;
+        return (captchaCode.isPresent() && captchaCode.get().getCode().equals(captcha));
     }
 
-    private String getSecretKey(int length) {
-       return  (new Random()).ints(48, 122)
+    private String generateSecretKey(int length) {
+        return (new Random()).ints(48, 122)
                 .filter(i -> (i < 57 || i > 65) && (i < 90 || i > 97))
                 .mapToObj(i -> (char) i)
                 .limit(length)
@@ -89,7 +86,34 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
                 .toString();
     }
 
-    private void insertCaptchaInDB(String code, String secretCode){
+    private String generateToken(int length) {
+        return (new Random()).ints(48, 122)
+                .filter(i -> (i < 57 || i > 65) && (i < 90 || i > 97) && (i != 49) && (i != 73) && (i != 76) && (i != 108) && (i != 105))
+                .mapToObj(i -> (char) i)
+                .limit(length)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
+    private BufferedImage resizeImage(BufferedImage bImage) {
+        Scalr.Method method = Scalr.Method.ULTRA_QUALITY;
+        Scalr.Mode mode = Scalr.Mode.FIT_EXACT;
+        return Scalr.resize(bImage, method, mode, width, height);
+    }
+
+    private String encodeCaptcha(BufferedImage image) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(image, "png", bos);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        byte[] bytesResizedImg = bos.toByteArray();
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(bytesResizedImg);
+    }
+
+
+    private void insertCaptchaInDB(String code, String secretCode) {
         CaptchaCode captchaCode = new CaptchaCode();
         captchaCode.setCode(code);
         captchaCode.setSecretCode(secretCode);
@@ -97,9 +121,10 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
         captchaCodeRepository.save(captchaCode);
     }
 
+    //Scheduled:
+    //clear old captcha in DB (fixedRate in milliseconds)
+    @Scheduled(fixedRateString = "${captcha.scheduledRate}")
     private void clearOldCaptcha() {
-        List<CaptchaCode> existedCaptcha = new ArrayList<>();
-        captchaCodeRepository.findAll().forEach(existedCaptcha::add);
-        captchaCodeRepository.deleteByTimeLessThanEqual(LocalDateTime.now().minusMinutes(lifetimeMinutes));
+        captchaCodeRepository.deleteByTimeLessThanEqual(LocalDateTime.now().minusMinutes(lifetime));
     }
 }

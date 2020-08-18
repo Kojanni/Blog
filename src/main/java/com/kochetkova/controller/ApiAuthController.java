@@ -4,6 +4,7 @@ import com.kochetkova.api.request.Login;
 import com.kochetkova.api.request.NewUser;
 import com.kochetkova.api.response.Error;
 import com.kochetkova.api.response.*;
+import com.kochetkova.model.User;
 import com.kochetkova.service.CaptchaCodeService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,51 +34,50 @@ public class ApiAuthController {
 
     //ВХОД
     @PostMapping("/login")
-    public ResponseEntity<AuthUser> login(HttpServletRequest request, @RequestBody Login login) {
-        AuthUser authUser = new AuthUser();
-        com.kochetkova.model.User userInfo = userService.findUserByEmail(login.getEmail());
+    public ResponseEntity<AuthUserResponse> login(HttpServletRequest request, @RequestBody Login login) {
+        AuthUserResponse authUser = new AuthUserResponse();
+        User userInfo = userService.findUserByEmail(login.getEmail());
 
-        if (!(userInfo == null || !userInfo.getPassword().contains(login.getPassword()))) {
-            User.UserBuilder userBuilder = User.builder();
-            userBuilder.id(userInfo.getId());
-            userBuilder.name(userInfo.getName());
-            userBuilder.photo(userInfo.getPhoto());
-            userBuilder.email(userInfo.getEmail());
-            if (userInfo.getIsModerator() == 1) {
-                userBuilder.moderation(true);
-                userBuilder.setting(true);
-            }
-            userBuilder.moderationCount(userInfo.getModerationPosts().size());
+        if (!(userInfo == null || !userInfo.getPassword().equals(login.getPassword()))) {
+            UserResponse user = getUserResponse(userInfo);
 
             String sessionId = request.getRequestedSessionId();
-            userService.saveSession(sessionId, userInfo.getId());
+            userService.saveSession(sessionId, userInfo);
 
             authUser.setResult(true);
-            authUser.setUser(userBuilder.build());
+            authUser.setUserResponse(user);
         }
         return new ResponseEntity<>(authUser, HttpStatus.OK);
     }
 
+    private UserResponse getUserResponse(User userInfo) {
+        UserResponse.UserResponseBuilder userResponseBuilder = UserResponse.builder();
+        userResponseBuilder.id(userInfo.getId());
+        userResponseBuilder.name(userInfo.getName());
+        userResponseBuilder.photo(userInfo.getPhoto());
+        userResponseBuilder.email(userInfo.getEmail());
+        if (userInfo.getIsModerator() == 1) {
+            userResponseBuilder.moderation(true);
+            userResponseBuilder.setting(true);
+        }
+        userResponseBuilder.moderationCount(userInfo.getModerationPosts().size());
+        return userResponseBuilder.build();
+    }
+
     //статус авторизации
     @GetMapping("/check")
-    public ResponseEntity<AuthUser> checkAuthStatus(HttpServletRequest request) {
-        AuthUser authUser = new AuthUser();
-        User.UserBuilder userBuilder = User.builder();
+    public ResponseEntity<AuthUserResponse> checkAuthStatus(HttpServletRequest request) {
+        AuthUserResponse authUser = new AuthUserResponse();
+
         String sessionId = request.getRequestedSessionId();
         if (userService.findAuthSession(sessionId)) {
-            com.kochetkova.model.User userInfo = userService.findAuthUser(sessionId);
-            userBuilder.id(userInfo.getId());
-            userBuilder.name(userInfo.getName());
-            userBuilder.photo(userInfo.getPhoto());
-            userBuilder.email(userInfo.getEmail());
-            if (userInfo.getIsModerator() == 1) {
-                userBuilder.moderation(true);
-                userBuilder.setting(true);
-            }
-            userBuilder.moderationCount(userInfo.getModerationPosts().size());
+            User userInfo = userService.findAuthUser(sessionId);
+            UserResponse user = getUserResponse(userInfo);
+
             authUser.setResult(true);
-            authUser.setUser(userBuilder.build());
+            authUser.setUserResponse(user);
         }
+
         return new ResponseEntity<>(authUser, HttpStatus.OK);
     }
 
@@ -136,9 +136,14 @@ public class ApiAuthController {
 
     //Выход пользователя
     @GetMapping("/logout")
-    public ResponseEntity<Object> logoutUser() {
-        //todo
-        return null;
+    public ResponseEntity<ResultError> logoutUser(HttpServletRequest request) {
+        String sessionId = request.getRequestedSessionId();
+        if (userService.findAuthSession(sessionId)) {
+            userService.deleteSession(sessionId);
+        }
+        ResultError result = new ResultError();
+        result.setResult(true);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
 }

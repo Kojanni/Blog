@@ -1,10 +1,13 @@
 package com.kochetkova.model;
 
+import com.kochetkova.api.request.AddedPost;
 import lombok.Data;
+import lombok.Value;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -24,11 +27,11 @@ public class Post {
     @NotNull
     private ModerationStatus moderationStatus;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "moderator_id")
     private User moderator;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     @NotNull
     private User user;
@@ -53,4 +56,15 @@ public class Post {
 
     @OneToMany(mappedBy = "post")
     private Set<PostComment> comments;
+
+    public void setPostData(AddedPost addedPost) {
+        //todo
+        //сделать проверку времени
+        this.time = addedPost.getTime();
+        this.isActive = addedPost.getActive();
+        this.title = addedPost.getTitle();
+        this.text = addedPost.getText();
+        this.viewCount = 0;
+        moderationStatus = ModerationStatus.NEW;
+    }
 }

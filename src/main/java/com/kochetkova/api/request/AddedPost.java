@@ -2,14 +2,22 @@ package com.kochetkova.api.request;
 
 import lombok.Data;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.ZoneId;
+import java.util.Set;
+import java.util.TimeZone;
 
 @Data
 public class AddedPost {
-    private LocalDateTime time;
-    private int active;
+    private Timestamp timestamp;
+    private byte active;
     private String title;
-    private List<String> tags;
+    private Set<String> tags;
     private String text;
+
+
+    public LocalDateTime getTime() {
+        return timestamp == null ? null : timestamp.toLocalDateTime();
+    }
 }

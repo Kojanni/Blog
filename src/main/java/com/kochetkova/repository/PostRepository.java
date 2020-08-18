@@ -11,5 +11,5 @@ public interface PostRepository extends CrudRepository <Post, Integer> {
 
     List<Post> findAllByOrderByTimeAsc();
 
-   List<Post> findAllByOrderByTimeDesc();
+    List<Post> findAllByOrderByTimeDesc();
 }

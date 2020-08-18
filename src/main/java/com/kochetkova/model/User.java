@@ -2,6 +2,7 @@ package com.kochetkova.model;
 
 import com.kochetkova.api.request.NewUser;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import javax.transaction.Transactional;
@@ -23,6 +24,7 @@ public class User {
     @NotNull
     private Byte isModerator;
 
+    @CreationTimestamp
     @Column(name = "reg_time")
     @NotNull
     private LocalDateTime regTime;
@@ -60,7 +62,6 @@ public class User {
         this.name = newUser.getName();
         this.email = newUser.getEmail();
         this.password = newUser.getPassword();
-        this.regTime = LocalDateTime.now();
         this.isModerator = 0;
     }
 }

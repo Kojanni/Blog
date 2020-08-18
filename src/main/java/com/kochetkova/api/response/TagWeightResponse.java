@@ -5,6 +5,6 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class TagWeight {
-    private List<Tag> tags;
+public class TagWeightResponse {
+    private List<TagResponse> tags;
 }

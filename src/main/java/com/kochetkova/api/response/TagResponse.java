@@ -3,7 +3,7 @@ package com.kochetkova.api.response;
 import lombok.Data;
 
 @Data
-public class Tag {
+public class TagResponse {
     private String name;
     private double weight;
 }

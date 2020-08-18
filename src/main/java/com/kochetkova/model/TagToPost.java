@@ -1,8 +1,11 @@
 package com.kochetkova.model;
 
+import lombok.Data;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
+@Data
 @Entity
 @Table(name = "tag2post")
 public class TagToPost {
