@@ -7,7 +7,7 @@ spring:
   jpa:
     show-sql: false
     generate-ddl: false
-    open-in-view: false
+    open-in-view: true
     hibernate:
       ddl-auto: validate
 

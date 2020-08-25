@@ -81,7 +81,7 @@ public class ApiAuthController {
         return new ResponseEntity<>(authUser, HttpStatus.OK);
     }
 
-    //ВОсстановление пароля
+    //Восстановление пароля
     @PostMapping("/restore")
     public ResponseEntity<Object> restorePassword() {
         //todo
@@ -95,7 +95,7 @@ public class ApiAuthController {
         return null;
     }
 
-    //Регистрация
+    //Регистрация пользователя
     @PostMapping("/register")
     public ResponseEntity<ResultErrorResponse> register(@RequestBody NewUser newUser) {
         ResultErrorResponse result = new ResultErrorResponse();

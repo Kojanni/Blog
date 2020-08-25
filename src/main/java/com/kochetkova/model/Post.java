@@ -49,13 +49,13 @@ public class Post {
     private int viewCount;
 
     @OneToMany(mappedBy = "post")
-    private Set<PostVote> votes;
+    private List<PostVote> votes;
 
     @OneToMany(mappedBy = "post")
-    private Set<TagToPost> tags;
+    private List<TagToPost> tags;
 
     @OneToMany(mappedBy = "post")
-    private Set<PostComment> comments;
+    private List<PostComment> comments;
 
     public void setPostData(AddedPost addedPost) {
         //todo

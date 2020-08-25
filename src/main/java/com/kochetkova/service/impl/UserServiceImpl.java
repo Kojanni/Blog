@@ -3,6 +3,7 @@ package com.kochetkova.service.impl;
 import com.kochetkova.api.request.EditProfile;
 import com.kochetkova.api.request.NewUser;
 import com.kochetkova.api.response.ErrorResponse;
+import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
 import com.kochetkova.service.UserService;
@@ -41,9 +42,10 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+//Добавление нового юзера в БД
     @Override
     public boolean addNewUser(NewUser newUser) {
-        if (checkUserData(newUser) && !isPresentUserByEmail(newUser.getEmail())) {
+        if (checkRegisteredUserData(newUser)) {
             User user = new User(newUser);
             userRepository.save(user);
             return true;
@@ -51,24 +53,25 @@ public class UserServiceImpl implements UserService {
         return false;
     }
 
+//Поиск пользовавтеля по email
     @Override
     public User findUserByEmail(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        return user.orElse(null);
+        return  userRepository.findByEmail(email).orElse(null);
     }
 
+//Поиск пользовавтеля по ID
     @Override
     public User findUserById(Integer id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.orElse(null);
+        return userRepository.findById(id).orElse(null);
     }
 
+//Существует ли пользователь в БД с введеннолй почтой:
     @Override
     public boolean isPresentUserByEmail(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        return user.isPresent();
+        return userRepository.findByEmail(email).isPresent();
     }
 
+//проверка корректности данных пользователя:
     @Override
     public boolean checkUserData(NewUser user) {
         return checkEmail(user.getEmail())
@@ -76,22 +79,31 @@ public class UserServiceImpl implements UserService {
                 && checkName(user.getName());
     }
 
+//проверка корректности данных пользователя и его существование в БД для регистрации:
+    @Override
+    public boolean checkRegisteredUserData(NewUser newUser) {
+        return  (checkUserData(newUser) && !isPresentUserByEmail(newUser.getEmail()));
+    }
+
+//проверка длины пароля
     @Override
     public boolean checkPassword(String password) {
         return password.length() >= passwordLengthMin;
     }
 
+//проверка корректности имени пользователя
     @Override
     public boolean checkName(String name) {
         return name.matches(NAME_REG);
     }
 
+//проверка корректности почтового ящика пользователя
     @Override
     public boolean checkEmail(String email) {
         return email.matches(EMAIL_REG);
     }
 
-
+//ошибки в корректности данных пользователя для обновления профиля запрос с фото
     @Override
     public ErrorResponse checkEditProfile(User user, String name, String email, String password, MultipartFile photo) {
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
@@ -121,6 +133,7 @@ public class UserServiceImpl implements UserService {
         return errorBuilder.build();
     }
 
+//ошибки в корректности данных пользователя для обновления профиля запрос без фото
     @Override
     public ErrorResponse checkEditProfile(User user, EditProfile editProfile) {
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
@@ -146,6 +159,7 @@ public class UserServiceImpl implements UserService {
         return errorBuilder.build();
     }
 
+//сохранить данные пользователя для обновления профиля запрос с фото
     @Override
     public User saveEditProfile(User user, String name, String email, String password, MultipartFile photo, Integer removePhoto) {
         if (!user.getName().equals(name)) {
@@ -174,11 +188,11 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+//сохранить данные пользователя для обновления профиля запрос без фото
     @Override
     public User saveEditProfile(User user, EditProfile editProfile) {
         return saveEditProfile(user, editProfile.getName(), editProfile.getEmail(), editProfile.getPassword(), null, editProfile.getRemovePhoto());
     }
-
 
     @Override
     public void saveSession(String sessionId, User user) {

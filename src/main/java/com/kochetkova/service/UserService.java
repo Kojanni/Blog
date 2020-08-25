@@ -14,6 +14,7 @@ public interface UserService {
     User findUserByEmail(String email);
     User findUserById(Integer id);
     boolean checkUserData(NewUser newUser);
+    boolean checkRegisteredUserData(NewUser newUser);
     boolean checkPassword(String password);
     boolean checkName(String name);
     boolean checkEmail(String email);
