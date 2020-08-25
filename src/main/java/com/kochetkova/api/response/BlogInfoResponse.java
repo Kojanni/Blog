@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Data
 @ConfigurationProperties(prefix = "blog")
-public class BlogInfo {
+public class BlogInfoResponse {
     private String title;
     private String subtitle;
     private String phone;

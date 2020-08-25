@@ -2,11 +2,9 @@ package com.kochetkova.controller;
 
 import com.kochetkova.api.request.AcceptedPost;
 import com.kochetkova.api.request.EditProfile;
-import com.kochetkova.api.response.BlogInfo;
-import com.kochetkova.api.response.Error;
-import com.kochetkova.api.response.ResultError;
-import com.kochetkova.api.response.Settings;
-import com.kochetkova.api.response.TagWeightResponse;
+import com.kochetkova.api.response.*;
+import com.kochetkova.api.response.BlogInfoResponse;
+import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.model.GlobalSetting;
 import com.kochetkova.model.User;
 import com.kochetkova.service.SettingsService;
@@ -21,27 +19,26 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.util.List;
 
 @Controller
 @ControllerAdvice
 @RequestMapping("/api")
 public class ApiGeneralController {
-    private final BlogInfo blogInfo;
+    private final BlogInfoResponse blogInfoResponse;
     private SettingsService settingsService;
     private UserService userService;
 
     @Autowired
-    public ApiGeneralController(SettingsService settingsService, UserService userService, BlogInfo blogInfo) {
+    public ApiGeneralController(SettingsService settingsService, UserService userService, BlogInfoResponse blogInfoResponse) {
         this.settingsService = settingsService;
         this.userService = userService;
-        this.blogInfo = blogInfo;
+        this.blogInfoResponse = blogInfoResponse;
     }
 
     @GetMapping("/init")
-    public ResponseEntity<BlogInfo> getDescription() {
-        return new ResponseEntity<>(blogInfo, HttpStatus.OK);
+    public ResponseEntity<BlogInfoResponse> getDescription() {
+        return new ResponseEntity<>(blogInfoResponse, HttpStatus.OK);
     }
 
     //загружает картинку на сервер, возвращает путь до изображения
@@ -83,19 +80,19 @@ public class ApiGeneralController {
 
     //Редактирование профиля
     @PostMapping(value = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResultError> editProfileWithPhoto(HttpServletRequest request,
-                                                            @RequestParam MultipartFile photo,
-                                                            @RequestParam String name,
-                                                            @RequestParam String email,
-                                                            @RequestParam(required = false) String password,
-                                                            @RequestParam Integer removePhoto) {
+    public ResponseEntity<ResultErrorResponse> editProfileWithPhoto(HttpServletRequest request,
+                                                                    @RequestParam MultipartFile photo,
+                                                                    @RequestParam String name,
+                                                                    @RequestParam String email,
+                                                                    @RequestParam(required = false) String password,
+                                                                    @RequestParam Integer removePhoto) {
 
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 
-        Error error = userService.checkEditProfile(user, name, email, password, photo);
+        ErrorResponse error = userService.checkEditProfile(user, name, email, password, photo);
 
-        ResultError resultError = new ResultError();
+        ResultErrorResponse resultError = new ResultErrorResponse();
 
         if (error.isPresent()) {
             resultError.setErrors(error);
@@ -107,26 +104,26 @@ public class ApiGeneralController {
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ResultError> handleMaxSizeException(HttpServletRequest request)  {
+    public ResponseEntity<ResultErrorResponse> handleMaxSizeException(HttpServletRequest request)  {
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 
-        ResultError resultError = new ResultError();
-        Error error = userService.checkEditProfile(user, user.getName(), user.getEmail(), user.getPassword(), null);
+        ResultErrorResponse resultError = new ResultErrorResponse();
+        ErrorResponse error = userService.checkEditProfile(user, user.getName(), user.getEmail(), user.getPassword(), null);
         resultError.setErrors(error);
 
         return new ResponseEntity<>(resultError, HttpStatus.OK);
     }
 
     @PostMapping("/profile/my")
-    public ResponseEntity<ResultError> editProfile(HttpServletRequest request, @RequestBody EditProfile editProfile) {
+    public ResponseEntity<ResultErrorResponse> editProfile(HttpServletRequest request, @RequestBody EditProfile editProfile) {
         //todo
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 
-        Error error = userService.checkEditProfile(user, editProfile);
+        ErrorResponse error = userService.checkEditProfile(user, editProfile);
 
-        ResultError resultError = new ResultError();
+        ResultErrorResponse resultError = new ResultErrorResponse();
         if (!error.isPresent()) {
             resultError.setResult(true);
             userService.saveEditProfile(user, editProfile);
@@ -153,9 +150,9 @@ public class ApiGeneralController {
 
     //Получение настроек
     @GetMapping("/settings")
-    public ResponseEntity<Settings> getSettings() {
+    public ResponseEntity<SettingsResponse> getSettings() {
         List<GlobalSetting> globalSettings = settingsService.getAll();
-        Settings settings = new Settings();
+        SettingsResponse settings = new SettingsResponse();
         settings.getSettings(globalSettings);
         return new ResponseEntity<>(settings, HttpStatus.OK);
     }

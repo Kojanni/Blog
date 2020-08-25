@@ -8,7 +8,7 @@ import lombok.Value;
 @Value
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Error {
+public class ErrorResponse {
     Boolean result;
     String title;
     String text;

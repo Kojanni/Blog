@@ -2,7 +2,7 @@ package com.kochetkova.service;
 
 import com.kochetkova.api.request.EditProfile;
 import com.kochetkova.api.request.NewUser;
-import com.kochetkova.api.response.Error;
+import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.model.User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,9 +17,9 @@ public interface UserService {
     boolean checkPassword(String password);
     boolean checkName(String name);
     boolean checkEmail(String email);
-    Error checkEditProfile(User user, EditProfile editProfile);
+    ErrorResponse checkEditProfile(User user, EditProfile editProfile);
     User saveEditProfile(User user, EditProfile editProfile);
-    Error checkEditProfile(User user, String name, String email, String password, MultipartFile photo);
+    ErrorResponse checkEditProfile(User user, String name, String email, String password, MultipartFile photo);
     User saveEditProfile(User user, String name, String email, String password, MultipartFile photo, Integer removePhoto);
     void saveSession(String sessionId,User user);
     void deleteSession(String sessionId);

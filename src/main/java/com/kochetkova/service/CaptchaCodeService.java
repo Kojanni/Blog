@@ -1,11 +1,11 @@
 package com.kochetkova.service;
 
-import com.kochetkova.api.response.Captcha;
+import com.kochetkova.api.response.CaptchaResponse;
 
 import java.io.IOException;
 
 public interface CaptchaCodeService {
-    Captcha getCaptcha() throws IOException;
+    CaptchaResponse getCaptcha() throws IOException;
     boolean checkCaptcha(String captcha, String secretCode);
 
 }

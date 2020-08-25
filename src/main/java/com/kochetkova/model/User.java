@@ -43,17 +43,17 @@ public class User {
 
     private String photo;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
-    private Set<Post> userPosts;
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<Post> userPosts;
 
-    @OneToMany(mappedBy = "moderator", fetch = FetchType.EAGER)
-    private Set<Post> moderationPosts = new HashSet<>();
+    @OneToMany(mappedBy = "moderator", fetch = FetchType.LAZY)
+    private List<Post> moderationPosts;
 
-    @OneToMany(mappedBy = "moderator", fetch = FetchType.EAGER)
-    private Set<Post> votes;
+    @OneToMany(mappedBy = "moderator", fetch = FetchType.LAZY)
+    private List<Post> votes;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
-    private Set<PostComment> comments;
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<PostComment> comments;
 
     public User() {
     }
@@ -63,5 +63,6 @@ public class User {
         this.email = newUser.getEmail();
         this.password = newUser.getPassword();
         this.isModerator = 0;
+        this.regTime = LocalDateTime.now();
     }
 }

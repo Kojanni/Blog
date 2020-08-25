@@ -2,7 +2,7 @@ package com.kochetkova.controller;
 
 import com.kochetkova.api.request.Login;
 import com.kochetkova.api.request.NewUser;
-import com.kochetkova.api.response.Error;
+import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.*;
 import com.kochetkova.model.User;
 import com.kochetkova.service.CaptchaCodeService;
@@ -97,10 +97,10 @@ public class ApiAuthController {
 
     //Регистрация
     @PostMapping("/register")
-    public ResponseEntity<ResultError> register(@RequestBody NewUser newUser) {
-        ResultError result = new ResultError();
+    public ResponseEntity<ResultErrorResponse> register(@RequestBody NewUser newUser) {
+        ResultErrorResponse result = new ResultErrorResponse();
         result.setResult(true);
-        Error.ErrorBuilder errorBuilder = Error.builder();
+        ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
         if (!captchaCodeService.checkCaptcha(newUser.getCaptcha(), newUser.getCaptchaSecret())) {
             errorBuilder.captcha("Код с картинки введен неверно");
             result.setResult(false);
@@ -122,7 +122,9 @@ public class ApiAuthController {
             result.setResult(false);
         }
         if (result.isResult()) {
-            userService.addNewUser(newUser);
+            if(!userService.addNewUser(newUser)) {
+                result.setResult(false);
+            }
         }
         result.setErrors(errorBuilder.build());
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -130,18 +132,18 @@ public class ApiAuthController {
 
     //Запрос капчи
     @GetMapping("/captcha")
-    public ResponseEntity<Captcha> getCaptcha() throws IOException {
+    public ResponseEntity<CaptchaResponse> getCaptcha() throws IOException {
         return new ResponseEntity<>(captchaCodeService.getCaptcha(), HttpStatus.OK);
     }
 
     //Выход пользователя
     @GetMapping("/logout")
-    public ResponseEntity<ResultError> logoutUser(HttpServletRequest request) {
+    public ResponseEntity<ResultErrorResponse> logoutUser(HttpServletRequest request) {
         String sessionId = request.getRequestedSessionId();
         if (userService.findAuthSession(sessionId)) {
             userService.deleteSession(sessionId);
         }
-        ResultError result = new ResultError();
+        ResultErrorResponse result = new ResultErrorResponse();
         result.setResult(true);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

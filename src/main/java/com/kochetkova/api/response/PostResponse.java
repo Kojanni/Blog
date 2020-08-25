@@ -24,7 +24,7 @@ public class PostResponse {
     private Integer viewCount;
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private List<Comment> comments;
+    private List<CommentResponse> comments;
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> tags;

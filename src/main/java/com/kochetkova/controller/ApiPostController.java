@@ -1,12 +1,10 @@
 package com.kochetkova.controller;
 
 import com.kochetkova.api.request.AddedPost;
-import com.kochetkova.api.response.Error;
-import com.kochetkova.api.response.ResultError;
-import com.kochetkova.api.response.SortedPosts;
-import com.kochetkova.model.Post;
+import com.kochetkova.api.response.ErrorResponse;
+import com.kochetkova.api.response.ResultErrorResponse;
+import com.kochetkova.api.response.SortedPostsResponse;
 import com.kochetkova.model.User;
-import com.kochetkova.repository.PostRepository;
 import com.kochetkova.service.PostService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +14,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
 
 @Controller
 @RequestMapping("/api/post")
@@ -38,13 +34,13 @@ public class ApiPostController {
 
     //добавляет пост
     @PostMapping("")
-    public ResponseEntity<ResultError> addPosts(HttpServletRequest request, @RequestBody AddedPost addedPost) {
+    public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody AddedPost addedPost) {
 //    todo
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 
-        ResultError resultError = new ResultError();
-        Error error = postService.checkAddedPost(addedPost);
+        ResultErrorResponse resultError = new ResultErrorResponse();
+        ErrorResponse error = postService.checkAddedPost(addedPost);
         if (!error.isPresent()) {
             resultError.setResult(true);
             postService.addPost(addedPost, user);
@@ -55,10 +51,10 @@ public class ApiPostController {
     }
 
     @GetMapping("")
-    public ResponseEntity<SortedPosts> getPostsList(@RequestParam String mode,
-                                                    @RequestParam int offset,
-                                                    @RequestParam int limit) {
-        SortedPosts sortedPosts = new SortedPosts();
+    public ResponseEntity<SortedPostsResponse> getPostsList(@RequestParam String mode,
+                                                            @RequestParam int offset,
+                                                            @RequestParam int limit) {
+        SortedPostsResponse sortedPosts = new SortedPostsResponse();
 
 
         return new ResponseEntity<>(sortedPosts, HttpStatus.OK);

@@ -3,6 +3,6 @@ package com.kochetkova.api.response;
 import lombok.Data;
 
 @Data
-public class AddedCommentId {
+public class AddedCommentIdResponse {
     private int id;
 }

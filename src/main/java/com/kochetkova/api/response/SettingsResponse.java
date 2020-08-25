@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class Settings {
+public class SettingsResponse {
     @JsonProperty("MULTIUSER_MODE")
     private boolean multiuserMode;
 

@@ -2,22 +2,17 @@ package com.kochetkova.service.impl;
 
 import com.kochetkova.api.request.EditProfile;
 import com.kochetkova.api.request.NewUser;
-import com.kochetkova.api.response.Error;
+import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
 import com.kochetkova.service.UserService;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.io.*;
-import java.net.URI;
-import java.sql.Blob;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -76,9 +71,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean checkUserData(NewUser user) {
-        return checkEmail(EMAIL_REG)
+        return checkEmail(user.getEmail())
                 && checkPassword(user.getPassword())
-                && checkName(NAME_REG);
+                && checkName(user.getName());
     }
 
     @Override
@@ -98,8 +93,8 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public Error checkEditProfile(User user, String name, String email, String password, MultipartFile photo) {
-        Error.ErrorBuilder errorBuilder = Error.builder();
+    public ErrorResponse checkEditProfile(User user, String name, String email, String password, MultipartFile photo) {
+        ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
 
         if (!user.getName().equals(name)) {
             if (!checkName(name)) {
@@ -127,8 +122,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Error checkEditProfile(User user, EditProfile editProfile) {
-        Error.ErrorBuilder errorBuilder = Error.builder();
+    public ErrorResponse checkEditProfile(User user, EditProfile editProfile) {
+        ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
 
         if (!user.getName().equals(editProfile.getName())) {
             if (!checkName(editProfile.getName())) {

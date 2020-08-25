@@ -3,7 +3,7 @@ package com.kochetkova.api.response;
 import lombok.Data;
 
 @Data
-public class Statistics {
+public class StatisticsResponse {
     private int postsCount;
     private int LikesCount;
     private int dislikeCount;

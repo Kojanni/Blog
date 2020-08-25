@@ -2,7 +2,7 @@ package com.kochetkova.service.impl;
 
 import com.github.cage.Cage;
 import com.github.cage.GCage;
-import com.kochetkova.api.response.Captcha;
+import com.kochetkova.api.response.CaptchaResponse;
 import com.kochetkova.model.CaptchaCode;
 import com.kochetkova.repository.CaptchaCodeRepository;
 import com.kochetkova.service.CaptchaCodeService;
@@ -45,13 +45,13 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
     }
 
     @Override
-    public Captcha getCaptcha() throws IOException {
+    public CaptchaResponse getCaptcha() throws IOException {
         String token = generateToken(wordLength);
         String secretKey = generateSecretKey(lengthSecretKey);
 
         String encodedImage = encodeCaptcha(generateCaptcha(token));
 
-        Captcha captcha = new Captcha();
+        CaptchaResponse captcha = new CaptchaResponse();
         captcha.setImage(encodedImage);
         captcha.setSecret(secretKey);
 
