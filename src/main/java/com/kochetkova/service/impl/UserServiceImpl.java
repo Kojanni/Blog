@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-//Добавление нового юзера в БД
+    //Добавление нового юзера в БД
     @Override
     public boolean addNewUser(NewUser newUser) {
         if (checkRegisteredUserData(newUser)) {
@@ -54,25 +54,25 @@ public class UserServiceImpl implements UserService {
         return false;
     }
 
-//Поиск пользовавтеля по email
+    //Поиск пользовавтеля по email
     @Override
     public User findUserByEmail(String email) {
-        return  userRepository.findByEmail(email).orElse(null);
+        return userRepository.findByEmail(email).orElse(null);
     }
 
-//Поиск пользовавтеля по ID
+    //Поиск пользовавтеля по ID
     @Override
     public User findUserById(Integer id) {
         return userRepository.findById(id).orElse(null);
     }
 
-//Существует ли пользователь в БД с введеннолй почтой:
+    //Существует ли пользователь в БД с введеннолй почтой:
     @Override
     public boolean isPresentUserByEmail(String email) {
         return userRepository.findByEmail(email).isPresent();
     }
 
-//проверка корректности данных пользователя:
+    //проверка корректности данных пользователя:
     @Override
     public boolean checkUserData(NewUser user) {
         return checkEmail(user.getEmail())
@@ -80,31 +80,31 @@ public class UserServiceImpl implements UserService {
                 && checkName(user.getName());
     }
 
-//проверка корректности данных пользователя и его существование в БД для регистрации:
+    //проверка корректности данных пользователя и его существование в БД для регистрации:
     @Override
     public boolean checkRegisteredUserData(NewUser newUser) {
-        return  (checkUserData(newUser) && !isPresentUserByEmail(newUser.getEmail()));
+        return (checkUserData(newUser) && !isPresentUserByEmail(newUser.getEmail()));
     }
 
-//проверка длины пароля
+    //проверка длины пароля
     @Override
     public boolean checkPassword(String password) {
         return password.length() >= passwordLengthMin;
     }
 
-//проверка корректности имени пользователя
+    //проверка корректности имени пользователя
     @Override
     public boolean checkName(String name) {
         return name.matches(NAME_REG);
     }
 
-//проверка корректности почтового ящика пользователя
+    //проверка корректности почтового ящика пользователя
     @Override
     public boolean checkEmail(String email) {
         return email.matches(EMAIL_REG);
     }
 
-//ошибки в корректности данных пользователя для обновления профиля запрос с фото
+    //ошибки в корректности данных пользователя для обновления профиля запрос с фото
     @Override
     public ErrorResponse checkEditProfile(User user, String name, String email, String password, MultipartFile photo) {
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
@@ -134,7 +134,7 @@ public class UserServiceImpl implements UserService {
         return errorBuilder.build();
     }
 
-//ошибки в корректности данных пользователя для обновления профиля запрос без фото
+    //ошибки в корректности данных пользователя для обновления профиля запрос без фото
     @Override
     public ErrorResponse checkEditProfile(User user, EditProfile editProfile) {
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
@@ -160,7 +160,7 @@ public class UserServiceImpl implements UserService {
         return errorBuilder.build();
     }
 
-//сохранить данные пользователя для обновления профиля запрос с фото
+    //сохранить данные пользователя для обновления профиля запрос с фото
     @Override
     public User saveEditProfile(User user, String name, String email, String password, MultipartFile photo, Integer removePhoto) {
         if (!user.getName().equals(name)) {
@@ -189,7 +189,7 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
-//сохранить данные пользователя для обновления профиля запрос без фото
+    //сохранить данные пользователя для обновления профиля запрос без фото
     @Override
     public User saveEditProfile(User user, EditProfile editProfile) {
         return saveEditProfile(user, editProfile.getName(), editProfile.getEmail(), editProfile.getPassword(), null, editProfile.getRemovePhoto());
@@ -215,6 +215,9 @@ public class UserServiceImpl implements UserService {
         return findUserById(sessions.get(sessionId));
     }
 
+    /**
+     *  cохранение новой фотографии в папке и установка ссылки у пользователя
+     */
     @Override
     public String savePhoto(User user, MultipartFile photo) {
         if (!photo.isEmpty()) {
@@ -237,6 +240,9 @@ public class UserServiceImpl implements UserService {
         return null;
     }
 
+    /**
+     * удаление фотографии из папки и ссылки у пользователя
+     */
     @Override
     public String deletePhoto(User user) {
         String fullPath = user.getPhoto();
@@ -250,14 +256,14 @@ public class UserServiceImpl implements UserService {
     //создание нового юзера по введенным данным в формате NewUser
     @Override
     public User createNewUser(NewUser newUser) {
-         User user = new User();
-            user.setName(newUser.getName());
-            user.setEmail(newUser.getEmail());
-            user.setPassword(newUser.getPassword());
-            user.setIsModerator((byte) 0);
-            user.setRegTime(LocalDateTime.now());
+        User user = new User();
+        user.setName(newUser.getName());
+        user.setEmail(newUser.getEmail());
+        user.setPassword(newUser.getPassword());
+        user.setIsModerator((byte) 0);
+        user.setRegTime(LocalDateTime.now());
 
-            return user;
-        }
+        return user;
+    }
 
 }

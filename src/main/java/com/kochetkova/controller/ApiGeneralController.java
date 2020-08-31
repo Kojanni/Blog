@@ -103,17 +103,6 @@ public class ApiGeneralController {
         return new ResponseEntity<>(resultError, HttpStatus.OK);
     }
 
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ResultErrorResponse> handleMaxSizeException(HttpServletRequest request)  {
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
-
-        ResultErrorResponse resultError = new ResultErrorResponse();
-        ErrorResponse error = userService.checkEditProfile(user, user.getName(), user.getEmail(), user.getPassword(), null);
-        resultError.setErrors(error);
-
-        return new ResponseEntity<>(resultError, HttpStatus.OK);
-    }
 
     @PostMapping("/profile/my")
     public ResponseEntity<ResultErrorResponse> editProfile(HttpServletRequest request, @RequestBody EditProfile editProfile) {
