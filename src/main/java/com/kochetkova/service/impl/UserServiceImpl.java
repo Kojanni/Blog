@@ -14,6 +14,7 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +47,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean addNewUser(NewUser newUser) {
         if (checkRegisteredUserData(newUser)) {
-            User user = new User(newUser);
+            User user = createNewUser(newUser);
             userRepository.save(user);
             return true;
         }
@@ -219,25 +220,6 @@ public class UserServiceImpl implements UserService {
         if (!photo.isEmpty()) {
             int id = user.getId();
 
-//            Blob blob = null;
-//            String str = null;
-//            StringBuffer strOut = new StringBuffer();
-//            try {
-//                byte[] bytes = photo.getBytes();
-//                blob = new SerialBlob(bytes);
-//                BufferedReader br = new BufferedReader(new InputStreamReader(blob.getBinaryStream()));
-//                while ((str=br.readLine())!=null) {
-//                    strOut.append(str);
-//                }
-//                return strOut.toString();
-//            } catch (SQLException | IOException throwables) {
-//                throwables.printStackTrace();
-//            }
-//            System.out.println(blob.toString() + blob );
-//            System.out.println(str);
-
-
-
             int numberOfFolder = id / 100;
             String fullPath = photoPath + separator + numberOfFolder + separator + id + "_" + photo.getOriginalFilename();
             File file = new File(fullPath);
@@ -250,7 +232,7 @@ public class UserServiceImpl implements UserService {
                 e.printStackTrace();
             }
 
-            return fullPath.replace("\\", "/");
+            return "/" + fullPath.replace("\\", "/");
         }
         return null;
     }
@@ -258,8 +240,24 @@ public class UserServiceImpl implements UserService {
     @Override
     public String deletePhoto(User user) {
         String fullPath = user.getPhoto();
-        File file = new File(fullPath);
+        File file = new File(fullPath.substring(1).replace("/", "\\"));
         file.delete();
+        user.setPhoto("");
+        userRepository.save(user);
         return null;
     }
+
+    //создание нового юзера по введенным данным в формате NewUser
+    @Override
+    public User createNewUser(NewUser newUser) {
+         User user = new User();
+            user.setName(newUser.getName());
+            user.setEmail(newUser.getEmail());
+            user.setPassword(newUser.getPassword());
+            user.setIsModerator((byte) 0);
+            user.setRegTime(LocalDateTime.now());
+
+            return user;
+        }
+
 }

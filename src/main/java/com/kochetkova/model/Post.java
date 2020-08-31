@@ -42,6 +42,8 @@ public class Post {
     @NotNull
     private String title;
 
+
+    @Column(columnDefinition = "TEXT")
     @NotNull
     private String text;
 
@@ -56,15 +58,4 @@ public class Post {
 
     @OneToMany(mappedBy = "post")
     private List<PostComment> comments;
-
-    public void setPostData(AddedPost addedPost) {
-        //todo
-        //сделать проверку времени
-        this.time = addedPost.getTime();
-        this.isActive = addedPost.getActive();
-        this.title = addedPost.getTitle();
-        this.text = addedPost.getText();
-        this.viewCount = 0;
-        moderationStatus = ModerationStatus.NEW;
-    }
 }

@@ -106,11 +106,11 @@ public class ApiAuthController {
             result.setResult(false);
         }
         if (userService.isPresentUserByEmail(newUser.getEmail())) {
-            errorBuilder.password("Этот e-mail уже зарегистрирован");
+            errorBuilder.email("Этот e-mail уже зарегистрирован");
             result.setResult(false);
         }
         if (!userService.checkEmail(newUser.getEmail())) {
-            errorBuilder.password("Некорректный e-mail");
+            errorBuilder.email("Некорректный e-mail");
             result.setResult(false);
         }
         if (!userService.checkName(newUser.getName())) {

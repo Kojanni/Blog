@@ -2,8 +2,10 @@ package com.kochetkova.controller;
 
 import com.kochetkova.api.request.AddedPost;
 import com.kochetkova.api.response.ErrorResponse;
+import com.kochetkova.api.response.PostResponse;
 import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.SortedPostsResponse;
+import com.kochetkova.model.Post;
 import com.kochetkova.model.User;
 import com.kochetkova.service.PostService;
 import com.kochetkova.service.UserService;
@@ -14,17 +16,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/api/post")
 public class ApiPostController {
     private UserService userService;
     private PostService postService;
-    private final String[] modeSort = {"recent", "popular", "best", "early"};
-    private final int modeRecent = 0;
-    private final int modePopular = 1;
-    private final int modeBest = 2;
-    private final int modeEarly = 3;
 
     @Autowired
     public ApiPostController(UserService userService, PostService postService) {
@@ -55,7 +55,9 @@ public class ApiPostController {
                                                             @RequestParam int offset,
                                                             @RequestParam int limit) {
         SortedPostsResponse sortedPosts = new SortedPostsResponse();
-
+        List<PostResponse> posts = postService.getSortedPosts(mode);
+        sortedPosts.setCount(posts.size());
+        sortedPosts.setPosts(posts);
 
         return new ResponseEntity<>(sortedPosts, HttpStatus.OK);
     }

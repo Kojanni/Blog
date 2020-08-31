@@ -1,16 +1,12 @@
 package com.kochetkova.model;
 
-import com.kochetkova.api.request.NewUser;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
-import javax.transaction.Transactional;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Data
@@ -55,14 +51,4 @@ public class User {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<PostComment> comments;
 
-    public User() {
-    }
-
-    public User(NewUser newUser) {
-        this.name = newUser.getName();
-        this.email = newUser.getEmail();
-        this.password = newUser.getPassword();
-        this.isModerator = 0;
-        this.regTime = LocalDateTime.now();
-    }
 }

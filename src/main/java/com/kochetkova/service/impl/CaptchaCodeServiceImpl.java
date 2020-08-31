@@ -74,7 +74,7 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
     @Override
     public boolean checkCaptcha(String captcha, String secretCode) {
         Optional<CaptchaCode> captchaCode = captchaCodeRepository.findBySecretCode(secretCode);
-        return (captchaCode.isPresent() && captchaCode.get().getCode().equals(captcha));
+        return (captchaCode.isPresent() && captchaCode.get().getCode().equalsIgnoreCase(captcha));
     }
 
     private String generateSecretKey(int length) {

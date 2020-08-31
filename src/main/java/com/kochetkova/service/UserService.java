@@ -28,5 +28,5 @@ public interface UserService {
     User findAuthUser(String sessionId);
     String savePhoto (User user, MultipartFile photo);
     String deletePhoto(User user);
-
+    User createNewUser(NewUser newUser);
 }
