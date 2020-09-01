@@ -4,12 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class AddedComment {
-    @JsonProperty("parent_id")
-    private String parentId;
-
+public class AcceptPostRequest {
     @JsonProperty("post_id")
     private int postId;
 
-    private String text;
+    private String decision;
+
 }

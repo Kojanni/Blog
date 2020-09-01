@@ -1,11 +1,10 @@
 package com.kochetkova.controller;
 
-import com.kochetkova.api.request.AddedPost;
+import com.kochetkova.api.request.NewPostRequest;
 import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.PostResponse;
 import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.SortedPostsResponse;
-import com.kochetkova.model.Post;
 import com.kochetkova.model.User;
 import com.kochetkova.service.PostService;
 import com.kochetkova.service.UserService;
@@ -13,14 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Controller
+@Transactional
 @RequestMapping("/api/post")
 public class ApiPostController {
     private UserService userService;
@@ -34,16 +33,16 @@ public class ApiPostController {
 
     //добавляет пост
     @PostMapping("")
-    public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody AddedPost addedPost) {
+    public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody NewPostRequest newPostRequest) {
 //    todo
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 
         ResultErrorResponse resultError = new ResultErrorResponse();
-        ErrorResponse error = postService.checkAddedPost(addedPost);
+        ErrorResponse error = postService.checkAddedPost(newPostRequest);
         if (!error.isPresent()) {
             resultError.setResult(true);
-            postService.addPost(addedPost, user);
+            postService.addPost(newPostRequest, user);
         } else {
             resultError.setErrors(error);
         }
@@ -70,7 +69,7 @@ public class ApiPostController {
 //    }
 
 //    @GetMapping("/{id}")
-//    public ResponseEntity<Object> getPost (@PathVariable int ID){
+//    public ResponseEntity<Object> getPost (@PathVariable int шв){
     //todo
 //        return null;
 //    }

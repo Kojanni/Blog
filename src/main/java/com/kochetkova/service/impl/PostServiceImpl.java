@@ -1,6 +1,6 @@
 package com.kochetkova.service.impl;
 
-import com.kochetkova.api.request.AddedPost;
+import com.kochetkova.api.request.NewPostRequest;
 import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.PostResponse;
 import com.kochetkova.model.ModerationStatus;
@@ -55,12 +55,13 @@ public class PostServiceImpl implements PostService {
 
 //Добавить пост
     @Override
-    public Post addPost(AddedPost addedPost, User user) {
-        Post post = createNewPost(addedPost);
+    public Post addPost(NewPostRequest newPostRequest, User user) {
+        Post post = createNewPost(newPostRequest);
         post.setUser(user);
         post = savePost(post);
 
-        Set<String> tagsName = addedPost.getTags();
+        Set<String> tagsName = newPostRequest.getTags();
+
         Post finalPost = post;
         tagsName.forEach(name ->{
             Tag tag = tagService.findTag(name);
@@ -74,12 +75,12 @@ public class PostServiceImpl implements PostService {
 
 //Проверка данных добавляемого поста
     @Override
-    public ErrorResponse checkAddedPost(AddedPost addedPost) {
+    public ErrorResponse checkAddedPost(NewPostRequest newPostRequest) {
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
-        if (!checkText(addedPost.getText())) {
+        if (!checkText(newPostRequest.getText())) {
             errorBuilder.text("Текс публикации слишком короткий");
         }
-        if (!checkTitle(addedPost.getTitle())) {
+        if (!checkTitle(newPostRequest.getTitle())) {
             errorBuilder.title("Заголовок не установлен или короткий");
         }
 
@@ -157,14 +158,14 @@ public class PostServiceImpl implements PostService {
 
     //получение нового объекта Post из данных поступивших по запросу в формате AddedPost
     @Override
-    public Post createNewPost(AddedPost addedPost) {
+    public Post createNewPost(NewPostRequest newPostRequest) {
         //todo
         //сделать проверку времени
         Post post = new Post();
-        post.setTime(addedPost.getTime());
-        post.setIsActive(addedPost.getActive());
-        post.setTitle(addedPost.getTitle());
-        post.setText(addedPost.getText());
+        post.setTime(newPostRequest.getTimestamp());
+        post.setIsActive(newPostRequest.getActive());
+        post.setTitle(newPostRequest.getTitle());
+        post.setText(newPostRequest.getText());
         post.setViewCount(0);
         post.setModerationStatus(ModerationStatus.NEW);
         return post;
@@ -172,13 +173,13 @@ public class PostServiceImpl implements PostService {
 
     //инициализация полей объекта Post из данных поступивших по запросу в формате AddedPost
     @Override
-    public void getExistPost(AddedPost addedPost, Post post) {
+    public void getExistPost(NewPostRequest newPostRequest, Post post) {
         //todo
         //сделать проверку времени
-        post.setTime(addedPost.getTime());
-        post.setIsActive(addedPost.getActive());
-        post.setTitle(addedPost.getTitle());
-        post.setText(addedPost.getText());
+        post.setTime(newPostRequest.getTimestamp());
+        post.setIsActive(newPostRequest.getActive());
+        post.setTitle(newPostRequest.getTitle());
+        post.setText(newPostRequest.getText());
         post.setViewCount(0);
         post.setModerationStatus(ModerationStatus.NEW);
     }

@@ -1,6 +1,6 @@
 package com.kochetkova.controller;
 
-import com.kochetkova.api.request.AcceptedPost;
+import com.kochetkova.api.request.AcceptPostRequest;
 import com.kochetkova.api.request.EditProfile;
 import com.kochetkova.api.response.*;
 import com.kochetkova.api.response.BlogInfoResponse;
@@ -15,7 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -67,7 +66,7 @@ public class ApiGeneralController {
 
     @PostMapping("/moderation")
     public ResponseEntity<Object> postModerationStatus(@RequestParam(value = "query", required = false) String query,
-                                                       @RequestBody AcceptedPost acceptedPost) {
+                                                       @RequestBody AcceptPostRequest acceptPostRequest) {
         //todo
         return null;
     }

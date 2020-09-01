@@ -1,14 +1,11 @@
 package com.kochetkova.model;
 
-import com.kochetkova.api.request.AddedPost;
 import lombok.Data;
-import lombok.Value;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @Entity
