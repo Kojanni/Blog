@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class NewVote {
+public class NewVoteRequest {
     @JsonProperty("post_id")
     private String postId;
 }

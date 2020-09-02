@@ -10,7 +10,7 @@ import javax.persistence.Lob;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class EditProfile {
+public class EditProfileRequest {
     private String name;
     private String email;
     private String password;

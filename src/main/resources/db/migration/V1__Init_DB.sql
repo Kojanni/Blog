@@ -37,7 +37,7 @@ create table posts (
     id integer not null auto_increment,
     is_active tinyint not null,
     moderation_status varchar(255) not null,
-    text varchar(255) not null,
+    text text not null,
     time datetime(6) not null,
     title varchar(255) not null,
     view_count integer not null,

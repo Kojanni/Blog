@@ -3,6 +3,7 @@ package com.kochetkova.api.request;
 import lombok.Data;
 
 @Data
-public class UserEmail {
+public class
+UserEmailRequest {
     private String email;
 }

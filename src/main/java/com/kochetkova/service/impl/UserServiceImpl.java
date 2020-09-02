@@ -1,9 +1,8 @@
 package com.kochetkova.service.impl;
 
-import com.kochetkova.api.request.EditProfile;
-import com.kochetkova.api.request.NewUser;
+import com.kochetkova.api.request.EditProfileRequest;
+import com.kochetkova.api.request.NewUserRequest;
 import com.kochetkova.api.response.ErrorResponse;
-import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
 import com.kochetkova.service.UserService;
@@ -17,7 +16,6 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -45,7 +43,7 @@ public class UserServiceImpl implements UserService {
 
     //Добавление нового юзера в БД
     @Override
-    public boolean addNewUser(NewUser newUser) {
+    public boolean addNewUser(NewUserRequest newUser) {
         if (checkRegisteredUserData(newUser)) {
             User user = createNewUser(newUser);
             userRepository.save(user);
@@ -74,7 +72,7 @@ public class UserServiceImpl implements UserService {
 
     //проверка корректности данных пользователя:
     @Override
-    public boolean checkUserData(NewUser user) {
+    public boolean checkUserData(NewUserRequest user) {
         return checkEmail(user.getEmail())
                 && checkPassword(user.getPassword())
                 && checkName(user.getName());
@@ -82,7 +80,7 @@ public class UserServiceImpl implements UserService {
 
     //проверка корректности данных пользователя и его существование в БД для регистрации:
     @Override
-    public boolean checkRegisteredUserData(NewUser newUser) {
+    public boolean checkRegisteredUserData(NewUserRequest newUser) {
         return (checkUserData(newUser) && !isPresentUserByEmail(newUser.getEmail()));
     }
 
@@ -136,7 +134,7 @@ public class UserServiceImpl implements UserService {
 
     //ошибки в корректности данных пользователя для обновления профиля запрос без фото
     @Override
-    public ErrorResponse checkEditProfile(User user, EditProfile editProfile) {
+    public ErrorResponse checkEditProfile(User user, EditProfileRequest editProfile) {
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
 
         if (!user.getName().equals(editProfile.getName())) {
@@ -191,7 +189,7 @@ public class UserServiceImpl implements UserService {
 
     //сохранить данные пользователя для обновления профиля запрос без фото
     @Override
-    public User saveEditProfile(User user, EditProfile editProfile) {
+    public User saveEditProfile(User user, EditProfileRequest editProfile) {
         return saveEditProfile(user, editProfile.getName(), editProfile.getEmail(), editProfile.getPassword(), null, editProfile.getRemovePhoto());
     }
 
@@ -255,7 +253,7 @@ public class UserServiceImpl implements UserService {
 
     //создание нового юзера по введенным данным в формате NewUser
     @Override
-    public User createNewUser(NewUser newUser) {
+    public User createNewUser(NewUserRequest newUser) {
         User user = new User();
         user.setName(newUser.getName());
         user.setEmail(newUser.getEmail());

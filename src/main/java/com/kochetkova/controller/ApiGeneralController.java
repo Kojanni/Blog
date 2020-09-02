@@ -1,7 +1,7 @@
 package com.kochetkova.controller;
 
 import com.kochetkova.api.request.AcceptPostRequest;
-import com.kochetkova.api.request.EditProfile;
+import com.kochetkova.api.request.EditProfileRequest;
 import com.kochetkova.api.response.*;
 import com.kochetkova.api.response.BlogInfoResponse;
 import com.kochetkova.api.response.ErrorResponse;
@@ -104,7 +104,7 @@ public class ApiGeneralController {
 
 
     @PostMapping("/profile/my")
-    public ResponseEntity<ResultErrorResponse> editProfile(HttpServletRequest request, @RequestBody EditProfile editProfile) {
+    public ResponseEntity<ResultErrorResponse> editProfile(HttpServletRequest request, @RequestBody EditProfileRequest editProfile) {
         //todo
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);

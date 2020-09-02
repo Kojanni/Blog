@@ -34,7 +34,7 @@ public class ApiPostController {
     //добавляет пост
     @PostMapping("")
     public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody NewPostRequest newPostRequest) {
-//    todo
+
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 

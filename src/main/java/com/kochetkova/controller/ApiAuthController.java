@@ -1,7 +1,7 @@
 package com.kochetkova.controller;
 
-import com.kochetkova.api.request.Login;
-import com.kochetkova.api.request.NewUser;
+import com.kochetkova.api.request.LoginRequest;
+import com.kochetkova.api.request.NewUserRequest;
 import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.*;
 import com.kochetkova.model.User;
@@ -34,7 +34,7 @@ public class ApiAuthController {
 
     //ВХОД
     @PostMapping("/login")
-    public ResponseEntity<AuthUserResponse> login(HttpServletRequest request, @RequestBody Login login) {
+    public ResponseEntity<AuthUserResponse> login(HttpServletRequest request, @RequestBody LoginRequest login) {
         AuthUserResponse authUser = new AuthUserResponse();
         User userInfo = userService.findUserByEmail(login.getEmail());
 
@@ -97,7 +97,7 @@ public class ApiAuthController {
 
     //Регистрация пользователя
     @PostMapping("/register")
-    public ResponseEntity<ResultErrorResponse> register(@RequestBody NewUser newUser) {
+    public ResponseEntity<ResultErrorResponse> register(@RequestBody NewUserRequest newUser) {
         ResultErrorResponse result = new ResultErrorResponse();
         result.setResult(true);
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
