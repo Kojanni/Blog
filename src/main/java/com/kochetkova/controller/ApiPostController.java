@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.websocket.server.PathParam;
 import java.util.List;
 
 @Controller
@@ -31,7 +32,10 @@ public class ApiPostController {
         this.postService = postService;
     }
 
-    //добавляет пост
+    /**
+     * добавляет пост
+     * POST запрос /api/post
+     */
     @PostMapping("")
     public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody NewPostRequest newPostRequest) {
 
@@ -49,14 +53,23 @@ public class ApiPostController {
         return new ResponseEntity<>(resultError, HttpStatus.OK);
     }
 
+    /**
+     * Вывод списко постов
+     * GET запрос /api/post
+     *
+     * @param mode - режим вывода (сортровка)
+     * @param offset - сдвиг от 0 для постграничного вывода
+     * @param limit - количество постов, которое нужно вывести
+     *
+     * @return 200 В любом случае
+     * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
+     */
     @GetMapping("")
     public ResponseEntity<SortedPostsResponse> getPostsList(@RequestParam String mode,
                                                             @RequestParam int offset,
                                                             @RequestParam int limit) {
-        SortedPostsResponse sortedPosts = new SortedPostsResponse();
-        List<PostResponse> posts = postService.getSortedPosts(mode);
-        sortedPosts.setCount(posts.size());
-        sortedPosts.setPosts(posts);
+
+        SortedPostsResponse sortedPosts = postService.getSortedPosts(mode, offset, limit);
 
         return new ResponseEntity<>(sortedPosts, HttpStatus.OK);
     }
@@ -69,7 +82,7 @@ public class ApiPostController {
 //    }
 
 //    @GetMapping("/{id}")
-//    public ResponseEntity<Object> getPost (@PathVariable int шв){
+//    public ResponseEntity<Object> getPost (@PathVariable int id){
     //todo
 //        return null;
 //    }
@@ -92,10 +105,15 @@ public class ApiPostController {
 //        return null;
 //    }
 
-//выводит посты, которые создал я (пользователь)
+//    /**
+//     * выводит посты, которые создал текущий пользователь(соотвествующий id)
+//     *
+//     */
+//
 //    @GetMapping("/my")
-//    public ResponseEntity<Object> getMyPosts (int id){
-    //todo
+//    public ResponseEntity<Object> getUserPosts (@PathParam("id") int id){
+//    //todo
+//
 //        return null;
 //    }
 

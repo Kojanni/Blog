@@ -3,6 +3,7 @@ package com.kochetkova.service.impl;
 import com.kochetkova.api.request.EditProfileRequest;
 import com.kochetkova.api.request.NewUserRequest;
 import com.kochetkova.api.response.ErrorResponse;
+import com.kochetkova.api.response.UserResponse;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
 import com.kochetkova.service.UserService;
@@ -251,7 +252,9 @@ public class UserServiceImpl implements UserService {
         return null;
     }
 
-    //создание нового юзера по введенным данным в формате NewUser
+    /**
+     * создание нового юзера по введенным данным в формате NewUser
+     */
     @Override
     public User createNewUser(NewUserRequest newUser) {
         User user = new User();
@@ -264,4 +267,21 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * формирование UserResponse на основе User
+     * @param user - информация, полученная из БД, о пользователе
+     * @param mode - режим полноты выдачи информации:
+     *             1 - только id и name;
+     * @return объект класса UserResponse
+     */
+    @Override
+    public UserResponse createUserResponse(User user, int mode) {
+        UserResponse.UserResponseBuilder userResponseBuilder = UserResponse.builder();
+        if (mode == 1) {
+            userResponseBuilder.id(user.getId());
+            userResponseBuilder.name(user.getName());
+        }
+
+        return userResponseBuilder.build();
+    }
 }

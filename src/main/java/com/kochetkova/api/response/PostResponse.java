@@ -1,6 +1,8 @@
 package com.kochetkova.api.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.kochetkova.converter.LocalDateTimeSerializer;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,8 +16,9 @@ import java.util.Set;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PostResponse {
     private Integer id;
-    private LocalDateTime time;
-    private UserResponse userResponse;
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    private LocalDateTime timestamp;
+    private UserResponse user;
     private String title;
     private String announce;
     private Integer likeCount;

@@ -1,10 +1,13 @@
 package com.kochetkova.model;
 
+import lombok.Data;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
+@Data
 @Table(name = "post_votes")
 public class PostVote {
     @Id
