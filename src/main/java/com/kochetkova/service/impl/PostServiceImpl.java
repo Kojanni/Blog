@@ -17,15 +17,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.support.PagedListHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class PostServiceImpl implements PostService {
@@ -120,17 +118,61 @@ public class PostServiceImpl implements PostService {
     }
 
     //Получение списка постов в соотвествии с режимом(параметр mode)
-    private List<Post> getModePosts(String mode) {
+
+    /**
+     * получение постов в соотвествии с режимом
+     *
+     * @param mode   - режим сортировки
+     * @param offset - сдвиг страницы
+     * @param limit  - кол-во публикаций для 1 страницы
+     * @return List<Post> - лист отсортированных постов для страницы
+     */
+    private List<Post> getModePosts(String mode, int offset, int limit) {
         List<Post> posts = new ArrayList<>();
         if (mode.equalsIgnoreCase(modeSort[modeRecent])) { //по дате публикации новые
-            posts = postRepository.findAllByOrderByTimeDesc();
+            Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+            posts = postRepository.findAllByOrderByTimeDesc(pageable);
+
         } else if (mode.equalsIgnoreCase(modeSort[modeBest])) { //по убыванию лайков
+            posts = postRepository.findAll();
+            Collections.sort(posts, (o1, o2) -> {
+                long likeO1 = o1.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count();
+                long likeO2 = o2.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count();
+                if (likeO1 > likeO2) {
+                    return -1;
+                } else if (likeO1 < likeO2) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            posts = getPostsPage(offset, limit, posts);
 
         } else if (mode.equalsIgnoreCase(modeSort[modePopular])) { //по убыванию комментов
+            posts = postRepository.findAll();
+            Collections.sort(posts, (o1, o2) -> {
+                if (o1.getComments().size() > o2.getComments().size()) {
+                    return -1;
+                } else if (o1.getComments().size() < o2.getComments().size()) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            posts = getPostsPage(offset, limit, posts);
 
         } else if (mode.equalsIgnoreCase(modeSort[modeEarly])) { //по дате публикации старые
-
+            Pageable pageable = getPageable(offset, limit, Sort.Direction.ASC, PostRepository.POST_TIME);
+            posts = postRepository.findAllByOrderByTimeAsc(pageable);
         }
+        return posts;
+    }
+
+    private List<Post> getPostsPage(int offset, int limit, List<Post> posts) {
+        PagedListHolder page = new PagedListHolder(posts);
+        page.setPageSize(limit); // number of items per page
+        page.setPage(offset / limit);
+        posts = page.getPageList();
         return posts;
     }
 
@@ -138,7 +180,6 @@ public class PostServiceImpl implements PostService {
      * postResponse на основе post
      *
      * @param post - данные поста, полученные из БД;
-     *
      */
     private PostResponse createPostResponse(Post post) {
         PostResponse.PostResponseBuilder postBuilder = PostResponse.builder();
@@ -166,7 +207,7 @@ public class PostServiceImpl implements PostService {
     public SortedPostsResponse getSortedPosts(String mode, int offset, int limit) {
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
 
-        List<Post> posts = getModePosts(mode);
+        List<Post> posts = getModePosts(mode, offset, limit);
         List<PostResponse> postResponses = new ArrayList<>();
         posts.forEach(post -> postResponses.add(createPostResponse(post)));
 
@@ -197,10 +238,14 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public List<Post> findAllById(int id, int offset, int limit) {
-        int pageNumber = offset / limit;
-        Sort sort = Sort.by(Sort.Direction.DESC, PostRepository.POST_TIME);
-        Pageable pageable = PageRequest.of(pageNumber, limit, sort);
+        Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
         return postRepository.findAllById(id, pageable);
+    }
+
+    private Pageable getPageable(int offset, int limit, Sort.Direction sortDirection, String sortField) {
+        int pageNumber = offset / limit;
+        Sort sort = Sort.by(sortDirection, sortField);
+        return PageRequest.of(pageNumber, limit, sort);
     }
 
     /**
@@ -243,6 +288,12 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public CommentResponse createCommentResponse(PostComment postComment) {
-        return null;
+        CommentResponse.CommentResponseBuilder commentResponseBuilder = CommentResponse.builder();
+        commentResponseBuilder.id(postComment.getId());
+        commentResponseBuilder.text(postComment.getText());
+        commentResponseBuilder.time(postComment.getTime());
+        commentResponseBuilder.userResponse(userService.createUserResponse(postComment.getUser(), 1));
+
+        return commentResponseBuilder.build();
     }
 }

@@ -1,10 +1,14 @@
 package com.kochetkova.model;
 
+import lombok.Data;
+import lombok.Value;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
+@Data
 @Table(name = "post_comments")
 public class PostComment {
     @Id
@@ -12,7 +16,7 @@ public class PostComment {
     private int id;
 
     @Column(name = "parent_id")
-    private int parentId;
+    private Integer parentId;
 
     @ManyToOne
     @JoinColumn(name = "post_id")
@@ -29,6 +33,4 @@ public class PostComment {
 
     @NotNull
     private String text;
-
-
 }

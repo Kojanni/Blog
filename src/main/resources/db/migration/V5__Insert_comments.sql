@@ -38,3 +38,43 @@ VALUES
 '2020-01-02 10:10:00.000000',
 2,
 2);
+
+
+INSERT INTO `blogdb`.`post_comments`
+(`id`,
+`text`,
+`time`,
+`post_id`,
+`user_id`)
+VALUES
+(4,
+'good top, thx',
+'2020-01-02 10:10:00.000000',
+3,
+2);
+
+INSERT INTO `blogdb`.`post_comments`
+(`id`,
+`text`,
+`time`,
+`post_id`,
+`user_id`)
+VALUES
+(5,
+'second comment',
+'2020-01-10 10:10:00.000000',
+3,
+2);
+
+INSERT INTO `blogdb`.`post_comments`
+(`id`,
+`text`,
+`time`,
+`post_id`,
+`user_id`)
+VALUES
+(6,
+'3 comment',
+'2020-01-11 10:10:00.000000',
+3,
+2);

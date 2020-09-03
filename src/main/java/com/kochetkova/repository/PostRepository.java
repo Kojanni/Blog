@@ -15,7 +15,7 @@ public interface PostRepository extends CrudRepository <Post, Integer> {
 
     List<Post> findAllById(int id, Pageable pageable);
 
-    List<Post> findAllByOrderByTimeAsc();
+    List<Post> findAllByOrderByTimeAsc(Pageable pageable);
 
-    List<Post> findAllByOrderByTimeDesc();
+    List<Post> findAllByOrderByTimeDesc(Pageable pageable);
 }
