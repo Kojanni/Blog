@@ -200,7 +200,7 @@ public class PostServiceImpl implements PostService {
      * @param post - данные поста, полученные из БД;
      * @param mode - режим сложности для ответа:
      *             1 - простой, без списком комментов, тегов,
-     *             2 - усложненный, с комментариями и тегами, вместо анонса полный текст.
+     *             2 - усложненный, с комментариями и тегами, вместо анонса полный текст, юзер с фото.
      */
     private PostResponse createPostResponse(Post post, int mode) {
         PostResponse.PostResponseBuilder postBuilder = PostResponse.builder();
@@ -226,8 +226,10 @@ public class PostServiceImpl implements PostService {
                     .map(Tag::getName)
                     .collect(Collectors.toList()));
             postBuilder.active(post.getIsActive() == 1);
-            postBuilder.announce("");
+            postBuilder.announce(null);
             postBuilder.text(post.getText());
+            postBuilder.commentCount(null);
+
         }
         return postBuilder.build();
     }
@@ -366,7 +368,7 @@ public class PostServiceImpl implements PostService {
         commentResponseBuilder.id(postComment.getId());
         commentResponseBuilder.text(postComment.getText());
         commentResponseBuilder.time(postComment.getTime());
-        commentResponseBuilder.userResponse(userService.createUserResponse(postComment.getUser(), 1));
+        commentResponseBuilder.user(userService.createUserResponse(postComment.getUser(), 2));
 
         return commentResponseBuilder.build();
     }

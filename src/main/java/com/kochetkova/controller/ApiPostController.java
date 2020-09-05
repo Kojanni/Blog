@@ -102,7 +102,8 @@ public class ApiPostController {
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 
-        if (post.getUser().getId() != user.getId() || user.getIsModerator() != 1) {
+        if (!(user.getIsModerator() == 1
+                || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
             postService.upViewCountOfPost(post);
         }
         PostResponse postResponse = postService.getPostResponseById(id);

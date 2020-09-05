@@ -18,5 +18,5 @@ public class CommentResponse {
 
     private String text;
 
-    private UserResponse userResponse;
+    private UserResponse user;
 }
