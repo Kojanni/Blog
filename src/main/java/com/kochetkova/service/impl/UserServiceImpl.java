@@ -284,4 +284,19 @@ public class UserServiceImpl implements UserService {
 
         return userResponseBuilder.build();
     }
+
+    @Override
+    public UserResponse createUserResponse(User userInfo) {
+        UserResponse.UserResponseBuilder userResponseBuilder = UserResponse.builder();
+        userResponseBuilder.id(userInfo.getId());
+        userResponseBuilder.name(userInfo.getName());
+        userResponseBuilder.photo(userInfo.getPhoto());
+        userResponseBuilder.email(userInfo.getEmail());
+        if (userInfo.getIsModerator() == 1) {
+            userResponseBuilder.moderation(true);
+            userResponseBuilder.setting(true);
+        }
+        userResponseBuilder.moderationCount(userInfo.getModerationPosts().size());
+        return userResponseBuilder.build();
+    }
 }

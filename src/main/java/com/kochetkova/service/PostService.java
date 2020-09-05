@@ -16,12 +16,11 @@ import java.util.Optional;
 public interface PostService {
     Post addPost(NewPostRequest newPostRequest, User user);
     ErrorResponse checkAddedPost(NewPostRequest newPostRequest);
-    boolean checkTitle(String title);
-    boolean checkText(String text);
     SortedPostsResponse getSortedPosts(String mode, int offset, int limit);
     Post findById(int id);
-    List<Post> findAllById(int id, int offset, int itemPerPage);
+    SortedPostsResponse getSortedPostsById(int id, String status, int offset, int limit);
     Post createNewPost(NewPostRequest newPostRequest);
     void getExistPost(NewPostRequest newPostRequest, Post post);
-    CommentResponse createCommentResponse(PostComment postComment);
+    PostResponse getPostResponseById(int id);
+    void upViewCountOfPost(Post post);
 }

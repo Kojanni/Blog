@@ -5,7 +5,7 @@ spring:
     password: TestTest
 
   jpa:
-    show-sql: false
+    show-sql: true
     generate-ddl: false
     open-in-view: true
     hibernate:

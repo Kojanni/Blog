@@ -18,8 +18,11 @@ public class PostResponse {
     private Integer id;
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime timestamp;
+
+    private Boolean active;
     private UserResponse user;
     private String title;
+    private String text;
     private String announce;
     private Integer likeCount;
     private Integer dislikeCount;

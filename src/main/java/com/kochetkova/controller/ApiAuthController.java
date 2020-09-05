@@ -39,7 +39,7 @@ public class ApiAuthController {
         User userInfo = userService.findUserByEmail(login.getEmail());
 
         if (!(userInfo == null || !userInfo.getPassword().equals(login.getPassword()))) {
-            UserResponse user = getUserResponse(userInfo);
+            UserResponse user = userService.createUserResponse(userInfo);
 
             String sessionId = request.getRequestedSessionId();
             userService.saveSession(sessionId, userInfo);
@@ -50,20 +50,6 @@ public class ApiAuthController {
         return new ResponseEntity<>(authUser, HttpStatus.OK);
     }
 
-    private UserResponse getUserResponse(User userInfo) {
-        UserResponse.UserResponseBuilder userResponseBuilder = UserResponse.builder();
-        userResponseBuilder.id(userInfo.getId());
-        userResponseBuilder.name(userInfo.getName());
-        userResponseBuilder.photo(userInfo.getPhoto());
-        userResponseBuilder.email(userInfo.getEmail());
-        if (userInfo.getIsModerator() == 1) {
-            userResponseBuilder.moderation(true);
-            userResponseBuilder.setting(true);
-        }
-        userResponseBuilder.moderationCount(userInfo.getModerationPosts().size());
-        return userResponseBuilder.build();
-    }
-
     //статус авторизации
     @GetMapping("/check")
     public ResponseEntity<AuthUserResponse> checkAuthStatus(HttpServletRequest request) {
@@ -72,7 +58,7 @@ public class ApiAuthController {
         String sessionId = request.getRequestedSessionId();
         if (userService.findAuthSession(sessionId)) {
             User userInfo = userService.findAuthUser(sessionId);
-            UserResponse user = getUserResponse(userInfo);
+            UserResponse user = userService.createUserResponse(userInfo);
 
             authUser.setResult(true);
             authUser.setUserResponse(user);

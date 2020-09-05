@@ -1,10 +1,13 @@
 package com.kochetkova.model;
 
+import lombok.Data;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.Set;
 
 @Entity
+@Data
 @Table(name = "tags")
 public class Tag {
     @Id
@@ -17,15 +20,4 @@ public class Tag {
     @OneToMany(mappedBy = "tag")
     private Set<TagToPost> posts;
 
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 }

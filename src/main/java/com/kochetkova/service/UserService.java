@@ -31,4 +31,5 @@ public interface UserService {
     String deletePhoto(User user);
     User createNewUser(NewUserRequest newUser);
     UserResponse createUserResponse(User user, int mode);
+    UserResponse createUserResponse(User userInfo);
 }

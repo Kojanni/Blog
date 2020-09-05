@@ -1,5 +1,9 @@
 package com.kochetkova.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.kochetkova.converter.LocalDateTimeSerializer;
+import com.kochetkova.converter.LocalDatetimeDeserializer;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -34,6 +38,8 @@ public class Post {
     private User user;
 
     @NotNull
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDatetimeDeserializer.class)
     private LocalDateTime time;
 
     @NotNull

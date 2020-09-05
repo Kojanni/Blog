@@ -5,6 +5,8 @@ import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.PostResponse;
 import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.SortedPostsResponse;
+import com.kochetkova.model.ModerationStatus;
+import com.kochetkova.model.Post;
 import com.kochetkova.model.User;
 import com.kochetkova.service.PostService;
 import com.kochetkova.service.UserService;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.websocket.server.PathParam;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -35,6 +38,11 @@ public class ApiPostController {
     /**
      * добавляет пост
      * POST запрос /api/post
+     *
+     * @param newPostRequest - данные добавляемого поста
+     * @return 200 в любом случае + resultError:
+     * true - все добавлено,
+     * false + error - есть ошибки в данных.
      */
     @PostMapping("")
     public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody NewPostRequest newPostRequest) {
@@ -57,10 +65,9 @@ public class ApiPostController {
      * Вывод списко постов
      * GET запрос /api/post
      *
-     * @param mode - режим вывода (сортровка)
+     * @param mode   - режим вывода (сортровка)
      * @param offset - сдвиг от 0 для постграничного вывода
-     * @param limit - количество постов, которое нужно вывести
-     *
+     * @param limit  - количество постов, которое нужно вывести
      * @return 200 В любом случае
      * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
      */
@@ -81,11 +88,29 @@ public class ApiPostController {
 //return null;
 //    }
 
-//    @GetMapping("/{id}")
-//    public ResponseEntity<Object> getPost (@PathVariable int id){
-    //todo
-//        return null;
-//    }
+    /**
+     * Получение поста /api/post/{id}
+     *
+     * @param id - номер поста
+     * @return 404 - если пост не найден,
+     * 200 + PostResponse(с комментариями и тегами - режим 2)
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Object> getPost(HttpServletRequest request, @PathVariable int id) {
+        Post post = postService.findById(id);
+
+        String sessionId = request.getRequestedSessionId();
+        User user = userService.findAuthUser(sessionId);
+
+        if (post.getUser().getId() != user.getId() || user.getIsModerator() != 1) {
+            postService.upViewCountOfPost(post);
+        }
+        PostResponse postResponse = postService.getPostResponseById(id);
+        if (postResponse == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(postResponse, HttpStatus.OK);
+    }
 
 //    @GetMapping("/byDate")
 //    public ResponseEntity<Object> getPostByDate (@PathParam("date") LocalDateTime Date){
@@ -105,17 +130,24 @@ public class ApiPostController {
 //        return null;
 //    }
 
-//    /**
-//     * выводит посты, которые создал текущий пользователь(соотвествующий id)
-//     *
-//     */
-//
-//    @GetMapping("/my")
-//    public ResponseEntity<Object> getUserPosts (@PathParam("id") int id){
-//    //todo
-//
-//        return null;
-//    }
+    /**
+     * выводит посты, которые создал текущий пользователь(соотвествующий id)
+     *
+     * @return 200 Status при любом ответе
+     * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
+     */
+    @GetMapping("/my")
+    public ResponseEntity<SortedPostsResponse> getUserPosts(HttpServletRequest request,
+                                                            @RequestParam String status,
+                                                            @RequestParam int offset,
+                                                            @RequestParam int limit) {
+        String sessionId = request.getRequestedSessionId();
+        int id = userService.findAuthUser(sessionId).getId();
+
+        SortedPostsResponse sortedPostsResponse = postService.getSortedPostsById(id, status, offset, limit);
+
+        return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
+    }
 
 
 //    @PutMapping("/{id}")
