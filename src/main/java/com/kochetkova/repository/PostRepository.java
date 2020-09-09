@@ -6,13 +6,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface PostRepository extends CrudRepository <Post, Integer> {
     String POST_TIME = "time";
 
+    Post findById(int id);
+
     List<Post> findAll();
+
+    List<Post> findAllByIsActiveAndModerationStatus( byte isActive, ModerationStatus moderationStatus, Pageable pageable);
 
     List<Post> findAllById(int id, Pageable pageable);
 
@@ -30,4 +35,9 @@ public interface PostRepository extends CrudRepository <Post, Integer> {
 
     List<Post> findAllByUserIdAndIsActiveAndModerationStatus(int id, byte isActive, ModerationStatus moderationStatus, Pageable pageable);
 
+    List<Post> findAllByIsActiveAndModerationStatusAndTextContainingIgnoreCaseOrIsActiveAndModerationStatusAndTitleContainingIgnoreCase(byte isActive, ModerationStatus moderationStatus, String queryText, byte isActive2, ModerationStatus moderationStatus2, String queryTitle, Pageable pageable);
+
+    List<Post> findAllByIsActiveAndModerationStatus(byte isActive, ModerationStatus moderationStatus);
+
+    List<Post> findAllByIsActiveAndModerationStatusAndTextContainingIgnoreCaseOrIsActiveAndModerationStatusAndTitleContainingIgnoreCase(byte isActive, ModerationStatus moderationStatus, String query, byte isActive2, ModerationStatus moderationStatus2, String query2);
 }

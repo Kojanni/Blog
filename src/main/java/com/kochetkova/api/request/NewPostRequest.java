@@ -7,6 +7,7 @@ import com.kochetkova.converter.LocalDatetimeDeserializer;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -16,6 +17,6 @@ public class NewPostRequest {
     private LocalDateTime timestamp;
     private byte active;
     private String title;
-    private Set<String> tags;
+    private List<String> tags;
     private String text;
 }

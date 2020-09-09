@@ -25,4 +25,9 @@ public class TagToPostServiceImpl implements TagToPostService {
 
         return tagToPostRepository.save(tagToPost);
     }
+
+    @Override
+    public void deleteByPost(Post post) {
+        tagToPostRepository.deleteAllByPost(post);
+    }
 }

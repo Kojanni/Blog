@@ -1,14 +1,16 @@
 package com.kochetkova.controller;
 
 import com.kochetkova.api.request.NewPostRequest;
+import com.kochetkova.api.request.NewVoteRequest;
 import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.PostResponse;
 import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.SortedPostsResponse;
-import com.kochetkova.model.ModerationStatus;
 import com.kochetkova.model.Post;
+import com.kochetkova.model.PostVote;
 import com.kochetkova.model.User;
 import com.kochetkova.service.PostService;
+import com.kochetkova.service.PostVoteService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,9 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.websocket.server.PathParam;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Controller
 @Transactional
@@ -28,11 +27,13 @@ import java.util.List;
 public class ApiPostController {
     private UserService userService;
     private PostService postService;
+    private PostVoteService postVoteService;
 
     @Autowired
-    public ApiPostController(UserService userService, PostService postService) {
+    public ApiPostController(UserService userService, PostService postService, PostVoteService postVoteService) {
         this.userService = userService;
         this.postService = postService;
+        this.postVoteService = postVoteService;
     }
 
     /**
@@ -80,13 +81,25 @@ public class ApiPostController {
 
         return new ResponseEntity<>(sortedPosts, HttpStatus.OK);
     }
-//пост по поисковому запросу
-//    @GetMapping("/search")
-    //todo
-//    public ResponseEntity<Object> getPostsWithQuery (@PathParam("query") String query){
-    //todo
-//return null;
-//    }
+
+    /**
+     * Поиск постов
+     * Get запрос /api/post/search
+     * Возвращает посты, соотвествующие поисковому запросу
+     *
+     * @param query - строка поискового запроса
+     * @return 200 В любом случае
+     * Посты возвращаются в формате SortedPostsResponse, при отсутствии постов - пустой класс
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Object> getPostsWithQuery(@RequestParam("query") String query,
+                                                    @RequestParam("offset") int offset,
+                                                    @RequestParam("limit") int limit) {
+        // todo
+        SortedPostsResponse sortedPosts = postService.getSortedPostsByQuery(query, offset, limit);
+
+        return new ResponseEntity<>(sortedPosts, HttpStatus.OK);
+    }
 
     /**
      * Получение поста /api/post/{id}
@@ -101,6 +114,7 @@ public class ApiPostController {
 
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
+
 
         if (!(user.getIsModerator() == 1
                 || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
@@ -150,24 +164,59 @@ public class ApiPostController {
         return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
     }
 
-
-//    @PutMapping("/{id}")
-//    public ResponseEntity<Object> editPost (@PathVariable("id") int id){
-    //todo
-//        return null;
-//    }
-
-    //добавление лайка
-    @PostMapping("/like")
-    public ResponseEntity<Object> postLike() {
+    /**
+     * Редактирование поста
+     * PUT запрос /api/post/{id}
+     *
+     * @param id - номер редактируемого поста
+     * @return resultError
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ResultErrorResponse> editPost(HttpServletRequest request, @PathVariable("id") int id, @RequestBody NewPostRequest newPostRequest) {
         //todo
-        return null;
+        String sessionId = request.getRequestedSessionId();
+        User user = userService.findAuthUser(sessionId);
+
+        ResultErrorResponse resultError = new ResultErrorResponse();
+        ErrorResponse error = postService.checkAddedPost(newPostRequest);
+        if (!error.isPresent()) {
+            resultError.setResult(true);
+            postService.putPost(id, newPostRequest, user);
+        } else {
+            resultError.setErrors(error);
+        }
+        return new ResponseEntity<>(resultError, HttpStatus.OK);
+    }
+
+    /**
+     * добавление лайка
+     *
+     * @param newVoteRequest - номер поста
+     * @return result   = true - если лайк прошел,
+     * = false - если нет
+     */
+    @PostMapping("/like")
+    public ResponseEntity<ResultErrorResponse> postLike(HttpServletRequest request, @RequestBody NewVoteRequest newVoteRequest) {
+
+        String sessionId = request.getRequestedSessionId();
+        User user = userService.findAuthUser(sessionId);
+        Post post = postService.findById(newVoteRequest.getPostId());
+
+        ResultErrorResponse resultErrorResponse = postVoteService.addLike(post, user);
+
+        return new ResponseEntity<>(resultErrorResponse, HttpStatus.OK);
     }
 
     //добавление дизлайка
     @PostMapping("/dislike")
-    public ResponseEntity<Object> postDislike() {
-        //todo
-        return null;
+    public ResponseEntity<ResultErrorResponse> postDislike(HttpServletRequest request, @RequestBody NewVoteRequest newVoteRequest) {
+
+        String sessionId = request.getRequestedSessionId();
+        User user = userService.findAuthUser(sessionId);
+        Post post = postService.findById(newVoteRequest.getPostId());
+
+        ResultErrorResponse resultErrorResponse = postVoteService.addDislike(post, user);
+
+        return new ResponseEntity<>(resultErrorResponse, HttpStatus.OK);
     }
 }

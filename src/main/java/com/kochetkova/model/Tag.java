@@ -4,6 +4,7 @@ import lombok.Data;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -17,7 +18,7 @@ public class Tag {
     @NotNull
     private String name;
 
-    @OneToMany(mappedBy = "tag")
-    private Set<TagToPost> posts;
+    @OneToMany(mappedBy = "tag", fetch = FetchType.LAZY)
+    private List<TagToPost> posts;
 
 }

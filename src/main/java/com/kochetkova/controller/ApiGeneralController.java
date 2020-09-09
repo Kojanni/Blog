@@ -8,6 +8,7 @@ import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.model.GlobalSetting;
 import com.kochetkova.model.User;
 import com.kochetkova.service.SettingsService;
+import com.kochetkova.service.TagService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,12 +28,14 @@ public class ApiGeneralController {
     private final BlogInfoResponse blogInfoResponse;
     private SettingsService settingsService;
     private UserService userService;
+    private TagService tagService;
 
     @Autowired
-    public ApiGeneralController(SettingsService settingsService, UserService userService, BlogInfoResponse blogInfoResponse) {
+    public ApiGeneralController(SettingsService settingsService, UserService userService, BlogInfoResponse blogInfoResponse, TagService tagService) {
         this.settingsService = settingsService;
         this.userService = userService;
         this.blogInfoResponse = blogInfoResponse;
+        this.tagService = tagService;
     }
 
     @GetMapping("/init")
@@ -57,9 +60,9 @@ public class ApiGeneralController {
 
 
     @GetMapping("/tag")
-    public ResponseEntity<Object> getTagByQuery(@RequestParam(value = "query", required = false) String query) {
-        //todo
-        TagWeightResponse tagWeightResponse = new TagWeightResponse();
+    public ResponseEntity<Object> getTag(@RequestParam(value = "query", required = false) String query) {
+        TagWeightResponse tagWeightResponse = tagService.getTagWeightResponse(query);
+
         return new ResponseEntity<>(tagWeightResponse, HttpStatus.OK);
     }
 

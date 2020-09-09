@@ -12,9 +12,6 @@ import com.kochetkova.service.TagService;
 import com.kochetkova.service.TagToPostService;
 import com.kochetkova.service.UserService;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.support.PagedListHolder;
@@ -22,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -59,25 +57,63 @@ public class PostServiceImpl implements PostService {
         this.tagToPostService = tagToPostService;
     }
 
+    /**
+     * Список всех постов
+     *
+     * @return List<Post>
+     */
+    @Override
+    public List<Post> findAll() {
+        return postRepository.findAll();
+    }
 
     //Добавить пост
     @Override
+    @Transactional
     public Post addPost(NewPostRequest newPostRequest, User user) {
         Post post = createNewPost(newPostRequest);
         post.setUser(user);
         post = savePost(post);
 
-        Set<String> tagsName = newPostRequest.getTags();
+        saveTag(newPostRequest, post);
+        return post;
+    }
 
-        Post finalPost = post;
-        tagsName.forEach(name -> {
-            Tag tag = tagService.findTag(name);
+    private void saveTag(NewPostRequest newPostRequest, Post post) {
+        newPostRequest.getTags().forEach(name -> {
+            Tag tag = tagService.findByTag(name);
             if (tag == null) {
                 tag = tagService.save(name);
             }
-            tagToPostService.save(tag, finalPost);
+            tagToPostService.save(tag, post);
         });
-        return post;
+    }
+
+
+    /**
+     * Изменить данные поста
+     *
+     * @param id             - номер поста
+     * @param newPostRequest - новые данные для поста
+     * @return
+     */
+    @Override
+    public Post putPost(int id, NewPostRequest newPostRequest, User user) {
+        Post post = postRepository.findById(id);
+        editPost(post, newPostRequest, user);
+        editTag(newPostRequest, post);
+        return savePost(post);
+    }
+
+    private void editTag(NewPostRequest newPostRequest, Post post) {
+        tagToPostService.deleteByPost(post);
+        newPostRequest.getTags().forEach(name -> {
+            Tag tag = tagService.findByTag(name);
+            if (tag == null) {
+                tag = tagService.save(name);
+            }
+            tagToPostService.save(tag, post);
+        });
     }
 
     //Проверка данных добавляемого поста
@@ -125,7 +161,7 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public Post findById(int id) {
-        return postRepository.findById(id).orElse(null);
+        return postRepository.findById(id);
     }
 
     /**
@@ -195,6 +231,35 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
+     * Поиск постов. Возвращает посты, соотвествующие поисковому запросу
+     *
+     * @param query  - строка поискового запроса
+     * @param offset - сдвиг страницы
+     * @param limit  - кол-во публикаций для 1 страницы
+     * @return SortedPostsResponse - общее количетво и список постов List<Post>
+     */
+    @Override
+    public SortedPostsResponse getSortedPostsByQuery(String query, int offset, int limit) {
+        Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+        int count;
+        List<Post> posts;
+        if (query == null) {
+            posts = postRepository.findAllByIsActiveAndModerationStatus((byte) 1, ModerationStatus.ACCEPTED, pageable);
+            count = postRepository.findAllByIsActiveAndModerationStatus((byte) 1, ModerationStatus.ACCEPTED).size();
+        } else {
+            posts = postRepository
+                    .findAllByIsActiveAndModerationStatusAndTextContainingIgnoreCaseOrIsActiveAndModerationStatusAndTitleContainingIgnoreCase((byte) 1, ModerationStatus.ACCEPTED, query, (byte) 1, ModerationStatus.ACCEPTED, query, pageable);
+            count = postRepository
+                    .findAllByIsActiveAndModerationStatusAndTextContainingIgnoreCaseOrIsActiveAndModerationStatusAndTitleContainingIgnoreCase((byte) 1, ModerationStatus.ACCEPTED, query, (byte) 1, ModerationStatus.ACCEPTED, query).size();
+        }
+
+        SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
+        sortedPostsResponse.setCount(count);
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        return sortedPostsResponse;
+    }
+
+    /**
      * postResponse на основе post
      *
      * @param post - данные поста, полученные из БД;
@@ -209,7 +274,7 @@ public class PostServiceImpl implements PostService {
             postBuilder.timestamp(post.getTime());
             postBuilder.user(userService.createUserResponse(post.getUser(), 1));
             postBuilder.title(post.getTitle());
-            postBuilder.announce(getAnnounce(post.getText()));
+            postBuilder.announce(html2text(post.getText()));
             postBuilder.likeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count());
             postBuilder.dislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
             postBuilder.commentCount(post.getComments().size());
@@ -235,18 +300,8 @@ public class PostServiceImpl implements PostService {
     }
 
     //текст поста без тегов и форматирования
-    private String getAnnounce(String text) {
-        StringBuilder textCleared = new StringBuilder();
-        if (text.contains("span")) {
-            Document doc = Jsoup.parse(text);
-            Elements paragraphs = doc.select("span");
-            for (Element paragraph : paragraphs) {
-                textCleared.append(paragraph.text());
-            }
-        } else {
-            textCleared.append(text);
-        }
-        return textCleared.toString();
+    private String html2text(String html) {
+        return Jsoup.parse(html).text();
     }
 
     /**
@@ -373,6 +428,23 @@ public class PostServiceImpl implements PostService {
         return commentResponseBuilder.build();
     }
 
+    private void editPost(Post post, NewPostRequest newPostRequest, User user) {
+        LocalDateTime current = LocalDateTime.now();
+        if (newPostRequest.getTimestamp().isBefore(current)) {
+            post.setTime(current);
+        } else {
+            post.setTime(newPostRequest.getTimestamp());
+        }
+
+        post.setIsActive(newPostRequest.getActive());
+        post.setTitle(newPostRequest.getTitle());
+        post.setText(newPostRequest.getText());
+
+        if (user.getIsModerator() != 1) {
+            post.setModerationStatus(ModerationStatus.NEW);
+        }
+    }
+
     /**
      * Получение записей на стене пользователя.
      *
@@ -408,6 +480,6 @@ public class PostServiceImpl implements PostService {
 
     //проверка длины текста
     private boolean checkText(String text) {
-        return getAnnounce(text).length() >= minLengthText;
+        return html2text(text).length() >= minLengthText;
     }
 }
