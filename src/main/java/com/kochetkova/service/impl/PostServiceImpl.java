@@ -139,7 +139,6 @@ public class PostServiceImpl implements PostService {
      * @param mode   - режим сортировки
      * @param offset - сдвиг страницы
      * @param limit  - кол-во публикаций для 1 страницы
-
      */
     @Override
     public SortedPostsResponse getSortedPosts(String mode, int offset, int limit) {
@@ -177,7 +176,6 @@ public class PostServiceImpl implements PostService {
      *               published - принятые по итогам модерации is_active = 1, moderation_status = ACCEPTED;
      * @param offset - сдвиг страницы
      * @param limit  - кол-во публикаций для 1 страницы
-
      */
     @Override
     public SortedPostsResponse getSortedPostsById(int id, String status, int offset, int limit) {
@@ -610,10 +608,9 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public Post createNewPost(NewPostRequest newPostRequest) {
-        //todo
-        //сделать проверку времени
+
         Post post = new Post();
-        post.setTime(newPostRequest.getTimestamp());
+        post.setTime(checkTime(newPostRequest));
         post.setTitle(newPostRequest.getTitle());
         post.setText(newPostRequest.getText());
         post.setViewCount(0);
@@ -630,13 +627,32 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
+     * Проверка времени
+     * Время публикации поста также должно проверяться:
+     * в случае, если время публикации раньше текущего времени,
+     * оно должно автоматически становиться текущим.
+     * Если позже текущего - необходимо устанавливать введенное значение.
+     *
+     * @param newPostRequest - данные для добавления поста
+     * @return проверенное время: если время публикации раньше текущего времени - текущее,
+     * позже - введенное значение.
+     */
+    private LocalDateTime checkTime(NewPostRequest newPostRequest) {
+        LocalDateTime time = newPostRequest.getTimestamp();
+        LocalDateTime timeNow = LocalDateTime.now();
+        if (time.isBefore(timeNow)) {
+            time = timeNow;
+        }
+        return time;
+    }
+
+    /**
      * инициализация полей объекта Post из данных поступивших по запросу
      */
     @Override
     public void getExistPost(NewPostRequest newPostRequest, Post post) {
-        //todo
-        //сделать проверку времени
-        post.setTime(newPostRequest.getTimestamp());
+
+        post.setTime(checkTime(newPostRequest));
         post.setIsActive(newPostRequest.getActive());
         post.setTitle(newPostRequest.getTitle());
         post.setText(newPostRequest.getText());
