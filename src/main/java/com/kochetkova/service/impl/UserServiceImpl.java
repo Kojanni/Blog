@@ -211,7 +211,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findAuthUser(String sessionId) {
-        return findUserById(sessions.get(sessionId));
+        if (sessions.get(sessionId) == null) {
+            return null;
+        }
+       return findUserById(sessions.get(sessionId));
     }
 
     /**

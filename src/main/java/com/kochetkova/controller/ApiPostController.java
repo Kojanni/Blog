@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
 @Controller
 @Transactional
@@ -48,9 +49,12 @@ public class ApiPostController {
     @PostMapping("")
     public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody NewPostRequest newPostRequest) {
 
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
-
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
         ResultErrorResponse resultError = new ResultErrorResponse();
         ErrorResponse error = postService.checkAddedPost(newPostRequest);
         if (!error.isPresent()) {
@@ -92,10 +96,9 @@ public class ApiPostController {
      * Посты возвращаются в формате SortedPostsResponse, при отсутствии постов - пустой класс
      */
     @GetMapping("/search")
-    public ResponseEntity<Object> getPostsWithQuery(@RequestParam("query") String query,
-                                                    @RequestParam("offset") int offset,
-                                                    @RequestParam("limit") int limit) {
-        // todo
+    public ResponseEntity<SortedPostsResponse> getPostsWithQuery(@RequestParam("query") String query,
+                                                                 @RequestParam("offset") int offset,
+                                                                 @RequestParam("limit") int limit) {
         SortedPostsResponse sortedPosts = postService.getSortedPostsByQuery(query, offset, limit);
 
         return new ResponseEntity<>(sortedPosts, HttpStatus.OK);
@@ -109,41 +112,92 @@ public class ApiPostController {
      * 200 + PostResponse(с комментариями и тегами - режим 2)
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getPost(HttpServletRequest request, @PathVariable int id) {
+    public ResponseEntity<PostResponse> getPost(HttpServletRequest request, @PathVariable int id) {
         Post post = postService.findById(id);
 
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);
 
 
-        if (!(user.getIsModerator() == 1
-                || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
+        if (user != null &&
+                !(user.getIsModerator() == 1
+                        || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
             postService.upViewCountOfPost(post);
         }
         PostResponse postResponse = postService.getPostResponseById(id);
         if (postResponse == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(postResponse, HttpStatus.OK);
     }
 
-//    @GetMapping("/byDate")
-//    public ResponseEntity<Object> getPostByDate (@PathParam("date") LocalDateTime Date){
-    //todo
-//        return null;
-//    }
+    /**
+     * Список постов за указанную дату
+     * GET запрос /api/post/byDate
+     *
+     * @param date   - дата
+     * @param offset - сдвиг от 0 для постграничного вывода
+     * @param limit  - количество постов, которое нужно вывести
+     * @return 200 В любом случае
+     * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
+     */
+    @GetMapping("/byDate")
+    public ResponseEntity<SortedPostsResponse> getPostByDate(@RequestParam("date") String date,
+                                                             @RequestParam("offset") int offset,
+                                                             @RequestParam("limit") int limit) {
 
-//    @GetMapping("/byTag")
-//    public ResponseEntity<Object> getPostsByTag (@PathParam("tag") String tag){
-    //todo
-//        return null;
-//    }
+        SortedPostsResponse sortedPostsResponse = postService.getSortedPostsByDate(date, offset, limit);
 
-//    @GetMapping("/moderation")
-//    public ResponseEntity<Object> getPostForModeration (){
-    //todo
-//        return null;
-//    }
+        return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
+    }
+
+    /**
+     * Список постов по тэгу
+     * GET запрос /api/post/byTag
+     *
+     * @param tag    - тег
+     * @param offset - сдвиг от 0 для постграничного вывода
+     * @param limit  - количество постов, которое нужно вывести
+     * @return 200 В любом случае
+     * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
+     */
+    @GetMapping("/byTag")
+    public ResponseEntity<SortedPostsResponse> getPostsByTag(@RequestParam("tag") String tag,
+                                                             @RequestParam("offset") int offset,
+                                                             @RequestParam("limit") int limit) {
+        SortedPostsResponse sortedPostsResponse = postService.getSortedPostsByTag(tag, offset, limit);
+
+        return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
+    }
+
+    /**
+     * Список постов на модерацию
+     * GET запрос /api/post/moderation
+     *
+     * @param status - статус модерации:
+     *               new - новые, необходжима модерация,
+     *               declined - отклоненные пользователем,
+     *               accepted - утвержденные пользователем,
+     * @param offset - сдвиг от 0 для постграничного вывода
+     * @param limit  - количество постов, которое нужно вывести
+     * @return 200 В любом случае
+     * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
+     */
+    @GetMapping("/moderation")
+    public ResponseEntity<SortedPostsResponse> getPostForModeration(HttpServletRequest request,
+                                                                    @RequestParam("status") String status,
+                                                                    @RequestParam("offset") int offset,
+                                                                    @RequestParam("limit") int limit) {
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
+        SortedPostsResponse sortedPostsResponse = postService.getSortedPostsForModeration(user, status, offset, limit);
+
+        return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
+    }
 
     /**
      * выводит посты, которые создал текущий пользователь(соотвествующий id)
@@ -156,10 +210,14 @@ public class ApiPostController {
                                                             @RequestParam String status,
                                                             @RequestParam int offset,
                                                             @RequestParam int limit) {
-        String sessionId = request.getRequestedSessionId();
-        int id = userService.findAuthUser(sessionId).getId();
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
 
-        SortedPostsResponse sortedPostsResponse = postService.getSortedPostsById(id, status, offset, limit);
+        SortedPostsResponse sortedPostsResponse = postService.getSortedPostsById(user.getId(), status, offset, limit);
 
         return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
     }
@@ -173,10 +231,12 @@ public class ApiPostController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<ResultErrorResponse> editPost(HttpServletRequest request, @PathVariable("id") int id, @RequestBody NewPostRequest newPostRequest) {
-        //todo
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
-
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
         ResultErrorResponse resultError = new ResultErrorResponse();
         ErrorResponse error = postService.checkAddedPost(newPostRequest);
         if (!error.isPresent()) {
@@ -198,8 +258,12 @@ public class ApiPostController {
     @PostMapping("/like")
     public ResponseEntity<ResultErrorResponse> postLike(HttpServletRequest request, @RequestBody NewVoteRequest newVoteRequest) {
 
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
         Post post = postService.findById(newVoteRequest.getPostId());
 
         ResultErrorResponse resultErrorResponse = postVoteService.addLike(post, user);
@@ -207,12 +271,22 @@ public class ApiPostController {
         return new ResponseEntity<>(resultErrorResponse, HttpStatus.OK);
     }
 
-    //добавление дизлайка
+    /**
+     * добавление дизлайка
+     *
+     * @param newVoteRequest - номер поста
+     * @return result   = true - если лайк прошел,
+     * = false - если нет
+     */
     @PostMapping("/dislike")
     public ResponseEntity<ResultErrorResponse> postDislike(HttpServletRequest request, @RequestBody NewVoteRequest newVoteRequest) {
 
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
         Post post = postService.findById(newVoteRequest.getPostId());
 
         ResultErrorResponse resultErrorResponse = postVoteService.addDislike(post, user);

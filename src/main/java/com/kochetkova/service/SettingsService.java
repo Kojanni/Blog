@@ -1,11 +1,15 @@
 package com.kochetkova.service;
 
+import com.kochetkova.api.request.SettingsRequest;
+import com.kochetkova.api.response.SettingsResponse;
 import com.kochetkova.model.GlobalSetting;
 
 import java.util.List;
 
 public interface SettingsService {
     List<GlobalSetting> getAll();
-    void editSetting(String code, boolean value);
-    GlobalSetting getByName(String code);
+
+    SettingsResponse getSettings();
+
+    void saveSettings(SettingsRequest settingsRequest);
 }

@@ -33,6 +33,10 @@ blog:
     text:
       length:
         min: 50
+    comment:
+      text:
+        length:
+          min: 50
 
 captcha:
   lifetime: 60

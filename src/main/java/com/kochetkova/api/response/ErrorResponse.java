@@ -18,6 +18,7 @@ public class ErrorResponse {
     String photo;
     String name;
     String password;
+    Boolean badRequest;
 
     @JsonIgnore
     public boolean isPresent(){
@@ -28,6 +29,7 @@ public class ErrorResponse {
                 email!= null ||
                 photo!= null ||
                 name!= null ||
-                password != null);
+                password != null ||
+                badRequest!= null);
     }
 }

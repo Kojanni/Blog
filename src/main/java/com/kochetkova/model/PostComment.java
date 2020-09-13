@@ -31,6 +31,7 @@ public class PostComment {
     @NotNull
     private LocalDateTime time;
 
+    @Column(columnDefinition = "TEXT")
     @NotNull
     private String text;
 }

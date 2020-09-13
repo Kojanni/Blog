@@ -1,17 +1,13 @@
 package com.kochetkova.service.impl;
 
+import com.kochetkova.api.request.ModerationPostRequest;
 import com.kochetkova.api.request.NewPostRequest;
-import com.kochetkova.api.response.CommentResponse;
-import com.kochetkova.api.response.ErrorResponse;
-import com.kochetkova.api.response.PostResponse;
-import com.kochetkova.api.response.SortedPostsResponse;
+import com.kochetkova.api.response.*;
 import com.kochetkova.model.*;
 import com.kochetkova.repository.PostRepository;
-import com.kochetkova.service.PostService;
-import com.kochetkova.service.TagService;
-import com.kochetkova.service.TagToPostService;
-import com.kochetkova.service.UserService;
+import com.kochetkova.service.*;
 import org.jsoup.Jsoup;
+import org.jsoup.select.Collector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.support.PagedListHolder;
@@ -21,7 +17,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +30,7 @@ public class PostServiceImpl implements PostService {
     private TagService tagService;
     private UserService userService;
     private TagToPostService tagToPostService;
+    private SettingsService settingsService;
     private final String[] MODE = {"recent", "popular", "best", "early"};
     private final int RECENT = 0;
     private final int POPULAR = 1;
@@ -41,7 +41,8 @@ public class PostServiceImpl implements PostService {
     private final int PENDING = 1;
     private final int DECLINED = 2;
     private final int PUBLISHED = 3;
-
+    private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatterYears = DateTimeFormatter.ofPattern("yyyy");
 
     @Value("${blog.post.title.length.min}")
     private int minLengthTitle;
@@ -50,11 +51,12 @@ public class PostServiceImpl implements PostService {
     private int minLengthText;
 
     @Autowired
-    public PostServiceImpl(PostRepository postRepository, TagService tagService, UserService userService, TagToPostService tagToPostService) {
+    public PostServiceImpl(PostRepository postRepository, TagService tagService, UserService userService, TagToPostService tagToPostService, SettingsService settingsService) {
         this.postRepository = postRepository;
         this.tagService = tagService;
         this.userService = userService;
         this.tagToPostService = tagToPostService;
+        this.settingsService = settingsService;
     }
 
     /**
@@ -95,7 +97,7 @@ public class PostServiceImpl implements PostService {
      *
      * @param id             - номер поста
      * @param newPostRequest - новые данные для поста
-     * @return
+     * @return Post - пост с новыми данными
      */
     @Override
     public Post putPost(int id, NewPostRequest newPostRequest, User user) {
@@ -137,7 +139,7 @@ public class PostServiceImpl implements PostService {
      * @param mode   - режим сортировки
      * @param offset - сдвиг страницы
      * @param limit  - кол-во публикаций для 1 страницы
-     * @return
+
      */
     @Override
     public SortedPostsResponse getSortedPosts(String mode, int offset, int limit) {
@@ -175,7 +177,7 @@ public class PostServiceImpl implements PostService {
      *               published - принятые по итогам модерации is_active = 1, moderation_status = ACCEPTED;
      * @param offset - сдвиг страницы
      * @param limit  - кол-во публикаций для 1 страницы
-     * @return
+
      */
     @Override
     public SortedPostsResponse getSortedPostsById(int id, String status, int offset, int limit) {
@@ -231,6 +233,65 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
+     * Календарь(количество публикаций)
+     *
+     * @param year - год, за который необходимо подсчитать количество,
+     *             если не задан, то за все года
+     * @return CalendarResponse - год(года) и список дата-количество
+     */
+    @Override
+    public CalendarResponse getPostsCountByYear(Integer year) {
+        List<Post> postByYears;
+
+        if (year == null) {
+            postByYears = postRepository.findAll();
+        } else {
+            LocalDateTime timeStart = LocalDateTime.of(year, Month.JANUARY, 1, 0, 0);
+            LocalDateTime timeEnd = timeStart.plusYears(1);
+            postByYears = postRepository.findAllByTimeBetween(timeStart, timeEnd);
+        }
+
+        CalendarResponse calendarResponse = new CalendarResponse();
+        calendarResponse.setPosts(getPostCountOnDay(postByYears));
+        calendarResponse.setYears(getYears(postByYears));
+
+        return calendarResponse;
+    }
+
+    /**
+     * Подсчитывает количество публикаций в день для списка постов
+     *
+     * @param posts - списк постов
+     * @return postsCount - количество публикаций в день
+     */
+    private Map<String, Integer> getPostCountOnDay(List<Post> posts) {
+        Map<String, Integer> postsCount = new TreeMap<>();
+        posts.forEach(post -> {
+            String date = formatterDate.format(post.getTime());
+            postsCount.computeIfPresent(date, (key, val) -> val + 1);
+            postsCount.putIfAbsent(date, 1);
+        });
+        return postsCount;
+    }
+
+    /**
+     * Создает список годов, в которых есть публикации
+     *
+     * @param posts - список постов
+     * @return years - года
+     */
+    private List<Integer> getYears(List<Post> posts) {
+        List<Integer> years = new ArrayList<>();
+        posts.forEach(post -> {
+            int year = Integer.parseInt(formatterYears.format(post.getTime()));
+            if (!years.contains(year)) {
+                years.add(year);
+            }
+        });
+        return years;
+    }
+
+    /**
      * Поиск постов. Возвращает посты, соотвествующие поисковому запросу
      *
      * @param query  - строка поискового запроса
@@ -257,6 +318,171 @@ public class PostServiceImpl implements PostService {
         sortedPostsResponse.setCount(count);
         sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
         return sortedPostsResponse;
+    }
+
+    /**
+     * Список постов за указанную дату
+     *
+     * @param dateString - дата
+     * @param offset     - сдвиг от 0 для постграничного вывода
+     * @param limit      - количество постов, которое нужно вывести
+     * @return SortedPostsResponse - общее количетво и список постов List<Post>
+     */
+    @Override
+    public SortedPostsResponse getSortedPostsByDate(String dateString, int offset, int limit) {
+        Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+
+        LocalDateTime date = LocalDate.parse(dateString, formatterDate).atStartOfDay();
+
+        List<Post> posts = postRepository.findAllByTimeBetween(date, date.plusDays(1), pageable);
+        int count = postRepository.findAllByTimeBetween(date, date.plusDays(1)).size();
+
+        SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
+        sortedPostsResponse.setCount(count);
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        return sortedPostsResponse;
+    }
+
+    /**
+     * Список постов по тэгу
+     *
+     * @param tagString - тег
+     * @param offset    - сдвиг от 0 для постграничного вывода
+     * @param limit     - количество постов, которое нужно вывести
+     * @return SortedPostsResponse - общее количетво и список постов List<Post>
+     */
+    @Override
+    public SortedPostsResponse getSortedPostsByTag(String tagString, int offset, int limit) {
+
+        List<Post> posts = tagService.findByTag(tagString)
+                .getPosts()
+                .stream()
+                .map(TagToPost::getPost)
+                .collect(Collectors.toList());
+
+        int count = posts.size();
+        posts = getPostsPage(offset, limit, posts);
+
+        SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
+        sortedPostsResponse.setCount(count);
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        return sortedPostsResponse;
+    }
+
+    /**
+     * Список постов на модерацию
+     *
+     * @param user   - авторизованный пользователь (модератор)
+     * @param status - статус модерации:
+     *               new - новые, необходжима модерация,
+     *               declined - отклоненные модератором,
+     *               accepted - утвержденные модератором,
+     * @param offset - сдвиг от 0 для постграничного вывода
+     * @param limit  - количество постов, которое нужно вывести
+     * @return SortedPostsResponse - общее количетво и список постов List<Post>
+     */
+    @Override
+    public SortedPostsResponse getSortedPostsForModeration(User user, String status, int offset, int limit) {
+        List<Post> posts = new ArrayList<>();
+        int count = 0;
+        Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+
+        if (status.equalsIgnoreCase("new")) { // Новые
+            posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.NEW, pageable);
+            count = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.NEW).size();
+
+        } else if (status.equalsIgnoreCase("declined")) { //отклоненные модератором
+            posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.DECLINED, pageable);
+            count = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.DECLINED).size();
+
+        } else if (status.equalsIgnoreCase("accepted")) { // утвержденные модератором
+            posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.ACCEPTED, pageable);
+            count = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.ACCEPTED).size();
+        }
+
+        //формирование ответа
+        SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
+        sortedPostsResponse.setCount(count);
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        return sortedPostsResponse;
+    }
+
+    /**
+     * Модерация поста
+     *
+     * @param moderationPostRequest - данные для изменения статуса поста
+     * @return true - если все изменено,
+     * false - если по какой-то причине изменить статус не удалось
+     */
+    @Override
+    public boolean changeModerationStatus(ModerationPostRequest moderationPostRequest) {
+        Post post = postRepository.findById(moderationPostRequest.getPostId());
+        if (post != null) {
+            if (moderationPostRequest.getDecision().equalsIgnoreCase("accept")) {
+                post.setModerationStatus(ModerationStatus.ACCEPTED);
+            } else {
+                post.setModerationStatus(ModerationStatus.DECLINED);
+            }
+            return postRepository.save(post) != null;
+        }
+        return false;
+    }
+
+    /**
+     * СТатистика для текущего пользователя
+     *
+     * @param user - текущий пользователь (not null)
+     * @return StatisticsResponse - общие количества параметров для всех публикаций, у который он является автором и доступные для чтения
+     */
+    @Override
+    public StatisticsResponse getUserStatistics(User user) {
+        List<Post> posts = postRepository.findAllByUserIdAndIsActive(user.getId(), (byte) 1);
+
+        return getStatisticsResponse(posts);
+    }
+
+    /**
+     * Статистика по всему блогу
+     *
+     * @return StatisticsResponse - общие количества параметров для всех публикаций, у который он является автором и доступные для чтения
+     */
+    @Override
+    public StatisticsResponse getStatistics() {
+        List<Post> posts = postRepository.findAll();
+
+        return getStatisticsResponse(posts);
+    }
+
+    /**
+     * Полученипе статистики на основе списка постов
+     *
+     * @param posts - список постов
+     * @return StatisticsResponse - статистика
+     */
+    private StatisticsResponse getStatisticsResponse(List<Post> posts) {
+        StatisticsResponse.StatisticsResponseBuilder statisticsResponseBuilder = StatisticsResponse.builder();
+
+        statisticsResponseBuilder.postsCount(posts.size());
+        statisticsResponseBuilder.likesCount(posts.stream()
+                .map(Post::getVotes)
+                .map(postVotes -> postVotes.stream().map(PostVote::getValue).filter(b -> b == (byte) 1).count())
+                .map(Long::intValue)
+                .reduce(0, Integer::sum));
+
+        statisticsResponseBuilder.dislikesCount(posts.stream()
+                .map(Post::getVotes)
+                .map(postVotes -> postVotes.stream().map(PostVote::getValue).filter(b -> b == (byte) -1).count())
+                .map(Long::intValue)
+                .reduce(0, Integer::sum));
+        statisticsResponseBuilder.viewsCount(posts.stream()
+                .map(Post::getViewCount)
+                .reduce(0, Integer::sum));
+        statisticsResponseBuilder.firstPublication(posts.stream()
+                .map(Post::getTime)
+                .min(LocalDateTime::compareTo)
+                .get());
+
+        return statisticsResponseBuilder.build();
     }
 
     /**
@@ -369,7 +595,6 @@ public class PostServiceImpl implements PostService {
      * @param limit  - кол-во публикаций для 1 страницы
      * @param offset - сдвиг страницы
      * @param posts  - список всех постов
-     * @return
      */
     private List<Post> getPostsPage(int offset, int limit, List<Post> posts) {
         PagedListHolder page = new PagedListHolder(posts);
@@ -389,11 +614,18 @@ public class PostServiceImpl implements PostService {
         //сделать проверку времени
         Post post = new Post();
         post.setTime(newPostRequest.getTimestamp());
-        post.setIsActive(newPostRequest.getActive());
         post.setTitle(newPostRequest.getTitle());
         post.setText(newPostRequest.getText());
         post.setViewCount(0);
-        post.setModerationStatus(ModerationStatus.NEW);
+
+        //проверка глобальных настроек сайта
+        if (!settingsService.getSettings().isPostPremoderation()) {
+            post.setIsActive((byte) 1);
+            post.setModerationStatus(ModerationStatus.ACCEPTED);
+        } else {
+            post.setIsActive(newPostRequest.getActive());
+            post.setModerationStatus(ModerationStatus.NEW);
+        }
         return post;
     }
 
@@ -415,8 +647,7 @@ public class PostServiceImpl implements PostService {
     /**
      * формирование CommentResponse на основе PostComment
      *
-     * @param postComment
-     * @return
+     * @param postComment - данные для комментария к посту
      */
     private CommentResponse createCommentResponse(PostComment postComment) {
         CommentResponse.CommentResponseBuilder commentResponseBuilder = CommentResponse.builder();

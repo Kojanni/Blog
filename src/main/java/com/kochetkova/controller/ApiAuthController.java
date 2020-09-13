@@ -6,6 +6,7 @@ import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.*;
 import com.kochetkova.model.User;
 import com.kochetkova.service.CaptchaCodeService;
+import com.kochetkova.service.SettingsService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,12 +25,14 @@ import java.io.IOException;
 public class ApiAuthController {
     private CaptchaCodeService captchaCodeService;
     private UserService userService;
+    private SettingsService settingsService;
 
 
     @Autowired
-    public ApiAuthController(CaptchaCodeService captchaCodeService, UserService userService) {
+    public ApiAuthController(CaptchaCodeService captchaCodeService, UserService userService, SettingsService settingsService) {
         this.captchaCodeService = captchaCodeService;
         this.userService = userService;
+        this.settingsService = settingsService;
     }
 
     //ВХОД
@@ -84,6 +87,11 @@ public class ApiAuthController {
     //Регистрация пользователя
     @PostMapping("/register")
     public ResponseEntity<ResultErrorResponse> register(@RequestBody NewUserRequest newUser) {
+        //проверка глобальных настроек:
+        if (!settingsService.getSettings().isMultiuserMode()) {
+            new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+        //--
         ResultErrorResponse result = new ResultErrorResponse();
         result.setResult(true);
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();

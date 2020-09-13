@@ -1,4 +1,4 @@
-package com.kochetkova.api.response;
+package com.kochetkova.api.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kochetkova.model.GlobalSetting;
@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class SettingsResponse {
+public class SettingsRequest {
     @JsonProperty("MULTIUSER_MODE")
     private boolean multiuserMode;
 

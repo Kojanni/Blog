@@ -1,15 +1,14 @@
 package com.kochetkova.controller;
 
-import com.kochetkova.api.request.AcceptPostRequest;
+import com.kochetkova.api.request.ModerationPostRequest;
 import com.kochetkova.api.request.EditProfileRequest;
+import com.kochetkova.api.request.NewCommentRequest;
+import com.kochetkova.api.request.SettingsRequest;
 import com.kochetkova.api.response.*;
 import com.kochetkova.api.response.BlogInfoResponse;
 import com.kochetkova.api.response.ErrorResponse;
-import com.kochetkova.model.GlobalSetting;
 import com.kochetkova.model.User;
-import com.kochetkova.service.SettingsService;
-import com.kochetkova.service.TagService;
-import com.kochetkova.service.UserService;
+import com.kochetkova.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,23 +18,25 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 
 @Controller
-@ControllerAdvice
 @RequestMapping("/api")
 public class ApiGeneralController {
     private final BlogInfoResponse blogInfoResponse;
     private SettingsService settingsService;
     private UserService userService;
     private TagService tagService;
+    private PostService postService;
+    private PostCommentService postCommentService;
 
     @Autowired
-    public ApiGeneralController(SettingsService settingsService, UserService userService, BlogInfoResponse blogInfoResponse, TagService tagService) {
+    public ApiGeneralController(SettingsService settingsService, UserService userService, BlogInfoResponse blogInfoResponse, TagService tagService, PostService postService, PostCommentService postCommentService) {
         this.settingsService = settingsService;
         this.userService = userService;
         this.blogInfoResponse = blogInfoResponse;
         this.tagService = tagService;
+        this.postService = postService;
+        this.postCommentService = postCommentService;
     }
 
     @GetMapping("/init")
@@ -50,13 +51,40 @@ public class ApiGeneralController {
 //        return null;
 //    }
 
+    /**
+     * Отправка комментария к посту
+     * POST запрос /api/comment
+     * Метод добавляет комментарий к посту.
+     *
+     * @param newCommentRequest - данные для нового комментария
+     * @return Если параметры parent_id и/или post_id неверные (соответствующие комментарий и/или пост не существуют),
+     * должна выдаваться ошибка 400 (см. ниже раздел “Обработка ошибок”).
+     * В случае, если текст комментария отсутствует (пустой) или слишком короткий, необходимо выдавать ошибку в JSON-формате.
+     */
+    @PostMapping("/comment")
+    public ResponseEntity<Object> addCommentToPost(HttpServletRequest request, @RequestBody NewCommentRequest newCommentRequest) {
 
-//    @PostMapping("/comment/")
-//    public ResponseEntity<Object> addCommentToPost (@PathParam("parent_id") int parentId, @PathParam("post_id") int postId, @PathParam("text") String text){
-//        todo
-    //json-obj for response
-//        return null;
-//    }
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
+
+        ResultErrorResponse resultError = postCommentService.checkNewCommentRequestData(newCommentRequest);
+        if (!resultError.isResult()) {
+            if (resultError.getErrors().getBadRequest()) { //400
+                return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            }
+            if (resultError.getErrors().isPresent()) { //error
+                return new ResponseEntity<>(resultError, HttpStatus.OK);
+            }
+        }
+
+        AddedCommentIdResponse commentIdResponse = postCommentService.addNewComment(newCommentRequest, user);
+
+        return new ResponseEntity<>(commentIdResponse, HttpStatus.OK);
+    }
 
 
     @GetMapping("/tag")
@@ -66,21 +94,56 @@ public class ApiGeneralController {
         return new ResponseEntity<>(tagWeightResponse, HttpStatus.OK);
     }
 
-
+    /**
+     * Модерация поста
+     * POST запрос /api/moderation
+     *
+     * @param moderationPostRequest - данные для изменения статуса поста
+     * @return ResultErrorResponse:
+     * result = true - если все изменено
+     * result = false - если по какой-то причине изменить статус не удалось
+     */
     @PostMapping("/moderation")
-    public ResponseEntity<Object> postModerationStatus(@RequestParam(value = "query", required = false) String query,
-                                                       @RequestBody AcceptPostRequest acceptPostRequest) {
+    public ResponseEntity<ResultErrorResponse> postModerationStatus(HttpServletRequest request,
+                                                                    @RequestBody ModerationPostRequest moderationPostRequest) {
         //todo
-        return null;
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
+
+        ResultErrorResponse result = new ResultErrorResponse();
+
+        if (user.getIsModerator() == 0) {
+            result.setResult(false);
+        } else {
+            result.setResult(postService.changeModerationStatus(moderationPostRequest));
+        }
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-////    @GetMapping("/calendar/")
-//    public ResponseEntity<Object> getPostsToYear(@PathParam("year") int year) {
-//        //todo
-//        return null;
-//    }
+    /**
+     * Календарь(количество публикаций)
+     * GET  запрос /api/calendar
+     *
+     * @param year - год, за который необходимо подсчитать количество,
+     *             если не задан, то за все года
+     * @return CalendarResponse - год(года) и список дата-количество
+     */
+    @GetMapping("/calendar")
+    public ResponseEntity<CalendarResponse> getPostsToYear(@RequestParam(value = "year", required = false) Integer year) {
 
-    //Редактирование профиля
+        CalendarResponse calendarResponse = postService.getPostsCountByYear(year);
+
+        return new ResponseEntity<>(calendarResponse, HttpStatus.OK);
+    }
+
+    /**
+     * Редактирование профиля
+     */
     @PostMapping(value = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResultErrorResponse> editProfileWithPhoto(HttpServletRequest request,
                                                                     @RequestParam MultipartFile photo,
@@ -105,7 +168,14 @@ public class ApiGeneralController {
         return new ResponseEntity<>(resultError, HttpStatus.OK);
     }
 
-
+    /**
+     * Редактирование моего профиля
+     * POST запрос /api/profile/my
+     *
+     * @param editProfile - данные для редактирования
+     * @return ResultErrorResponse: результат true, если все изменено без ошибок
+     * резутат false + список ошибок, если нет
+     */
     @PostMapping("/profile/my")
     public ResponseEntity<ResultErrorResponse> editProfile(HttpServletRequest request, @RequestBody EditProfileRequest editProfile) {
         //todo
@@ -125,26 +195,80 @@ public class ApiGeneralController {
         return new ResponseEntity<>(resultError, HttpStatus.OK);
     }
 
-    //СТатистика для текущего пользователя
+    /**
+     * СТатистика для текущего пользователя
+     * GET запрос /api/statistics/my
+     * Авторизация: требуется
+     *
+     * @return StatisticsResponse - общие количества параметров для всех публикаций, у который он является автором и доступные для чтения
+     */
     @GetMapping("/statistics/my")
-    public ResponseEntity<Object> getUserStatistics() {
-        //todo
-        return null;
+    public ResponseEntity<StatisticsResponse> getUserStatistics(HttpServletRequest request) {
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
+
+        StatisticsResponse statisticsResponse = postService.getUserStatistics(user);
+
+        return new ResponseEntity<>(statisticsResponse, HttpStatus.OK);
     }
 
-    //СТатистика блога
+    /**
+     * Статистика по всему блогу
+     * GET запрос /api/statistics/all
+     * Авторизация: не требуется
+     *
+     * @return StatisticsResponse - общие количества параметров для всех публикаций, у который он является автором и доступные для чтения
+     */
     @GetMapping("/statistics/all")
-    public ResponseEntity<Object> getStatistics() {
-        //todo
-        return null;
+    public ResponseEntity<StatisticsResponse> getStatistics(HttpServletRequest request) {
+        //проверка настроек:
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        boolean isPublic = settingsService.getSettings().isStatisticsIsPublic();
+
+        if (isPublic || (!isPublic && user.getIsModerator() == (byte) 1)) {
+            return new ResponseEntity<>(postService.getStatistics(), HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
-    //Получение настроек
+    /**
+     * Получение настроек
+     * GET запрос /api/settings/
+     * Авторизация: не требуется
+     *
+     * @return SettingsResponse Метод возвращает глобальные настройки блога из таблицы global_settings.
+     */
     @GetMapping("/settings")
     public ResponseEntity<SettingsResponse> getSettings() {
-        List<GlobalSetting> globalSettings = settingsService.getAll();
-        SettingsResponse settings = new SettingsResponse();
-        settings.getSettings(globalSettings);
+        SettingsResponse settings = settingsService.getSettings();
+
         return new ResponseEntity<>(settings, HttpStatus.OK);
+    }
+
+
+    /**
+     * Сохранение настроек
+     * PUT запрос /api/settings/
+     * Авторизация: требуется
+     *
+     * @return Метод записывает глобальные настройки блога в таблицу global_settings, если запрашивающий пользователь авторизован и является модератором.
+     */
+    @PutMapping("/settings")
+    public ResponseEntity<SettingsResponse> putSettings(HttpServletRequest request, @RequestBody SettingsRequest settingsRequest) {
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null || user.getIsModerator() == 0) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
+
+        settingsService.saveSettings(settingsRequest);
+
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 }
