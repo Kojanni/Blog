@@ -18,6 +18,16 @@ spring:
   flyway:
     baselineOnMigrate: true
 
+  mail:
+    protocol: smtps
+    host: smtp.gmail.com
+    username: skillboxblog@gmail.com
+    password: skillboxBlog123
+    port: 465
+
+mail:
+  debug: true
+
 
 blog:
   title: DevPub

@@ -3,9 +3,11 @@ package com.kochetkova.service.impl;
 import com.kochetkova.api.request.EditProfileRequest;
 import com.kochetkova.api.request.NewUserRequest;
 import com.kochetkova.api.response.ErrorResponse;
+import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.UserResponse;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
+import com.kochetkova.service.MailSender;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,10 +19,12 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
+    private MailSender mailSender;
     private static final String EMAIL_REG = "^([a-zA-Z0-9_\\-.]+)@([a-zA-Z0-9_\\-.]+)\\.([a-zA-Z]{2,5})$";
     private static final String NAME_REG = "[A-ZА-Яa-zа-я]+";
     private final String separator = File.separator;
@@ -33,8 +37,9 @@ public class UserServiceImpl implements UserService {
     private int passwordLengthMin;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, MailSender mailSender) {
         this.userRepository = userRepository;
+        this.mailSender = mailSender;
     }
 
     @Override
@@ -222,6 +227,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public String savePhoto(User user, MultipartFile photo) {
+        //todo
+        //изменение размера фото
+        //при загрузке файла изображения фотографии пользователя, необходимо выполнять обрезку и изменение размера фотографии до 36х36 пикселей.
+
         if (!photo.isEmpty()) {
             int id = user.getId();
 
@@ -305,5 +314,33 @@ public class UserServiceImpl implements UserService {
         }
         userResponseBuilder.moderationCount(userInfo.getModerationPosts().size());
         return userResponseBuilder.build();
+    }
+
+    /**
+     * Восстановление пароля
+     * POST /api/auth/restore
+     * Авторизация: не требуется
+     * Если пользователь найден, ему должно отправляться письмо со ссылкой на восстановление пароля следующего вида - /login/change-password/HASH.
+     * @param email - e-mail пользователя
+     * @return ResultErrorResponse "result": true или false
+     */
+    @Override
+    public ResultErrorResponse restorePassword(String email) {
+        ResultErrorResponse result = new ResultErrorResponse();
+        User user = findUserByEmail(email);
+        if (user != null) {
+            user.setCode(UUID.randomUUID().toString());
+            saveUser(user);
+            String message = String.format("Hello, dear %s!\n"
+                    + "Вы отправили запрос на восстановление пароля?\n"
+                    + "Кто-то (надеемся, что вы) попросил нас сбросить пароль для вашей учетной записи. Чтобы сделать это, щелкните по ссылке ниже:\n"
+                    + "http://localhost:8080/login/change-password/%s\n"
+                    + "Если вы не запрашивали сброс пароля, игнорируйте это сообщение!",
+                    user.getName(), user.getCode());
+            mailSender.send(user.getEmail(), "Восстановление пароля", message);
+
+            result.setResult(true);
+        }
+        return result;
     }
 }

@@ -3,6 +3,7 @@ package com.kochetkova.service;
 import com.kochetkova.api.request.EditProfileRequest;
 import com.kochetkova.api.request.NewUserRequest;
 import com.kochetkova.api.response.ErrorResponse;
+import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.UserResponse;
 import com.kochetkova.model.User;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,4 +33,6 @@ public interface UserService {
     User createNewUser(NewUserRequest newUser);
     UserResponse createUserResponse(User user, int mode);
     UserResponse createUserResponse(User userInfo);
+
+    ResultErrorResponse restorePassword(String email);
 }

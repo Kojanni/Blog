@@ -2,10 +2,12 @@ package com.kochetkova.controller;
 
 import com.kochetkova.api.request.LoginRequest;
 import com.kochetkova.api.request.NewUserRequest;
+import com.kochetkova.api.request.UserEmailRequest;
 import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.*;
 import com.kochetkova.model.User;
 import com.kochetkova.service.CaptchaCodeService;
+import com.kochetkova.service.MailSender;
 import com.kochetkova.service.SettingsService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,11 +72,20 @@ public class ApiAuthController {
         return new ResponseEntity<>(authUser, HttpStatus.OK);
     }
 
-    //Восстановление пароля
+    /**
+     * Восстановление пароля
+     * POST /api/auth/restore
+     * Авторизация: не требуется
+     *Если пользователь найден, ему должно отправляться письмо со ссылкой на восстановление пароля следующего вида - /login/change-password/HASH.
+     * @param userEmail - e-mail пользователя
+     * @return ResultErrorResponse "result": true или false
+     */
     @PostMapping("/restore")
-    public ResponseEntity<Object> restorePassword() {
-        //todo
-        return null;
+    public ResponseEntity<ResultErrorResponse> restorePassword(@RequestBody UserEmailRequest userEmail) {
+        //todo: восстановление пароля, почта
+        ResultErrorResponse result = userService.restorePassword(userEmail.getEmail());
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     //Изменение пароля
@@ -116,7 +127,7 @@ public class ApiAuthController {
             result.setResult(false);
         }
         if (result.isResult()) {
-            if(!userService.addNewUser(newUser)) {
+            if (!userService.addNewUser(newUser)) {
                 result.setResult(false);
             }
         }
