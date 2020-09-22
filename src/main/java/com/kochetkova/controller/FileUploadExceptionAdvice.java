@@ -31,7 +31,7 @@ public class FileUploadExceptionAdvice {
         ErrorResponse error = userService.checkEditProfile(user, user.getName(), user.getEmail(), user.getPassword(), null);
         resultError.setErrors(error);
 
-        return new ResponseEntity<>(resultError, HttpStatus.OK);
+        return new ResponseEntity<>(resultError, HttpStatus.BAD_REQUEST);
     }
 
 }

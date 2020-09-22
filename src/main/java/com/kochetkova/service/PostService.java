@@ -5,6 +5,7 @@ import com.kochetkova.api.request.NewPostRequest;
 import com.kochetkova.api.response.*;
 import com.kochetkova.model.Post;
 import com.kochetkova.model.User;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -25,9 +26,9 @@ public interface PostService {
 
     Post createNewPost(NewPostRequest newPostRequest);
 
-    void getExistPost(NewPostRequest newPostRequest, Post post);
+    void getPostToNewPostRequest(NewPostRequest newPostRequest, Post post);
 
-    PostResponse getPostResponseById(int id);
+    PostResponse getPostResponseByPost(Post Post);
 
     void upViewCountOfPost(Post post);
 
@@ -46,4 +47,6 @@ public interface PostService {
     StatisticsResponse getUserStatistics(User user);
 
     StatisticsResponse getStatistics();
+
+    String savePostImage(MultipartFile image);
 }

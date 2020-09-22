@@ -7,7 +7,6 @@ import com.kochetkova.api.response.PostResponse;
 import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.SortedPostsResponse;
 import com.kochetkova.model.Post;
-import com.kochetkova.model.PostVote;
 import com.kochetkova.model.User;
 import com.kochetkova.service.PostService;
 import com.kochetkova.service.PostVoteService;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 
 @Controller
 @Transactional
@@ -69,6 +67,9 @@ public class ApiPostController {
     /**
      * Вывод списко постов
      * GET запрос /api/post
+     * Должны выводиться только активные (is_active = 1),
+     * утверждённые модератором (moderation_status = ACCEPTED) посты
+     * с датой публикации не позднее текущего момента.
      *
      * @param mode   - режим вывода (сортровка)
      * @param offset - сдвиг от 0 для постграничного вывода
@@ -119,15 +120,16 @@ public class ApiPostController {
         User user = userService.findAuthUser(sessionId);
 
 
-        if (user != null &&
-                !(user.getIsModerator() == 1
-                        || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
+        if (user != null
+                && !(user.getIsModerator() == 1
+                || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
             postService.upViewCountOfPost(post);
         }
-        PostResponse postResponse = postService.getPostResponseById(id);
+        PostResponse postResponse = postService.getPostResponseByPost(post);
         if (postResponse == null) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
+
         return new ResponseEntity<>(postResponse, HttpStatus.OK);
     }
 
@@ -173,6 +175,7 @@ public class ApiPostController {
     /**
      * Список постов на модерацию
      * GET запрос /api/post/moderation
+     * Должны выводиться только активные (is_active = 1) посты
      *
      * @param status - статус модерации:
      *               new - новые, необходжима модерация,
@@ -201,7 +204,16 @@ public class ApiPostController {
 
     /**
      * выводит посты, которые создал текущий пользователь(соотвествующий id)
+     * GET /api/post/my
+     * Авторизация: требуется
      *
+     * @param offset - сдвиг от 0 для постраничного вывода
+     * @param limit  - количество постов, которое надо вывести
+     * @param status - статус модерации:
+     *               inactive - скрытые, ещё не опубликованы (is_active = 0)
+     *               pending - активные, ожидают утверждения модератором (is_active = 1, moderation_status = NEW)
+     *               declined - отклонённые (is_active = 1, moderation_status = DECLINED)
+     *               published - опубликованные (is_active = 1, moderation_status = ACCEPTED)
      * @return 200 Status при любом ответе
      * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
      */

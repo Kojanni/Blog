@@ -39,17 +39,45 @@ public class ApiGeneralController {
         this.postCommentService = postCommentService;
     }
 
+    /**
+     * Общие данные блога
+     * GET /api/init/
+     * название блога
+     * подзаголовок для размещения в хэдере сайта,
+     * номер телефона,
+     * e-mail и
+     * информацию об авторских правах для размещения в футере.
+     *
+     * @return BlogInfoResponse
+     */
     @GetMapping("/init")
     public ResponseEntity<BlogInfoResponse> getDescription() {
         return new ResponseEntity<>(blogInfoResponse, HttpStatus.OK);
     }
 
-    //загружает картинку на сервер, возвращает путь до изображения
-//    @PostMapping("/image")
-//    public String loadPicForPost (){
-    //todo
-//        return null;
-//    }
+
+    /**
+     * Загрузка изображений
+     * POST /api/image
+     * Авторизация: требуется
+     * Запрос: Content-Type: multipart/form-data
+     *
+     * @return Метод возвращает путь до изображения
+     */
+    @PostMapping("/image")
+    public ResponseEntity<Object> loadPicForPost(HttpServletRequest request,
+                                                 @RequestParam MultipartFile image) {
+        //Авторизация есть?
+        User user = userService.findAuthUser(request.getRequestedSessionId());
+        if (user == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+        //--
+
+        //todo Загрузка изображений
+        String imagePath = postService.savePostImage(image);
+        return new ResponseEntity<>(imagePath, HttpStatus.OK);
+    }
 
     /**
      * Отправка комментария к посту
@@ -62,7 +90,8 @@ public class ApiGeneralController {
      * В случае, если текст комментария отсутствует (пустой) или слишком короткий, необходимо выдавать ошибку в JSON-формате.
      */
     @PostMapping("/comment")
-    public ResponseEntity<Object> addCommentToPost(HttpServletRequest request, @RequestBody NewCommentRequest newCommentRequest) {
+    public ResponseEntity<Object> addCommentToPost(HttpServletRequest request,
+                                                   @RequestBody NewCommentRequest newCommentRequest) {
 
         //Авторизация есть?
         User user = userService.findAuthUser(request.getRequestedSessionId());
@@ -73,7 +102,7 @@ public class ApiGeneralController {
 
         ResultErrorResponse resultError = postCommentService.checkNewCommentRequestData(newCommentRequest);
         if (!resultError.isResult()) {
-            if (resultError.getErrors().getBadRequest()) { //400
+            if (resultError.getErrors().getBadRequest() != null) { //400
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             }
             if (resultError.getErrors().isPresent()) { //error
@@ -86,9 +115,17 @@ public class ApiGeneralController {
         return new ResponseEntity<>(commentIdResponse, HttpStatus.OK);
     }
 
-
+    /**
+     * Получение списка тэгов
+     * GET /api/tag/
+     * Метод выдаёт список тэгов, начинающихся на строку, заданную в параметре
+     * В случае, если она не задана, выводятся все тэги.
+     *
+     * @param query -  часть тэга или тэг, может быть не задан или быть пустым.
+     * @return TagWeightResponse - список тегов с относительным нормированным весом
+     */
     @GetMapping("/tag")
-    public ResponseEntity<Object> getTag(@RequestParam(value = "query", required = false) String query) {
+    public ResponseEntity<TagWeightResponse> getTag(@RequestParam(value = "query", required = false) String query) {
         TagWeightResponse tagWeightResponse = tagService.getTagWeightResponse(query);
 
         return new ResponseEntity<>(tagWeightResponse, HttpStatus.OK);
@@ -142,7 +179,8 @@ public class ApiGeneralController {
     }
 
     /**
-     * Редактирование профиля
+     * Редактирование моего профиля. Запрос c изменением данных с фото
+     * POST /api/profile/my
      */
     @PostMapping(value = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResultErrorResponse> editProfileWithPhoto(HttpServletRequest request,
@@ -169,7 +207,7 @@ public class ApiGeneralController {
     }
 
     /**
-     * Редактирование моего профиля
+     * Редактирование моего профиля. Запрос c изменением данных без фото
      * POST запрос /api/profile/my
      *
      * @param editProfile - данные для редактирования

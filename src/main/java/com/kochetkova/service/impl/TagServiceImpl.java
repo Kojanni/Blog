@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,6 +63,17 @@ public class TagServiceImpl implements TagService {
         return tagResponse;
     }
 
+    private List<TagResponse> normalizeTagResponse(List<TagResponse> tagResponses) {
+        double maxWeight = tagResponses.stream()
+                .max(Comparator.comparing(o -> ((Double) o.getWeight())))
+                .get().getWeight();
+        double coefficient = 1 / maxWeight;
+
+        tagResponses.forEach(tagResponse -> tagResponse.setWeight(tagResponse.getWeight() * coefficient));
+
+        return tagResponses;
+    }
+
     /**
      * Определение веса тега
      *
@@ -69,7 +81,7 @@ public class TagServiceImpl implements TagService {
      * @return вес тега double
      */
     private double getWeightTag(Tag tag) {
-        return Double.parseDouble(df.format((double) tag.getPosts().size() / postRepository.findAll().size()).replace(",", "."));
+        return Double.parseDouble(df.format((double) tag.getPosts().size() / findAll().size()).replace(",", "."));
     }
 
     /**
@@ -100,7 +112,7 @@ public class TagServiceImpl implements TagService {
             tags = findAllByNameStartingWith(query);
         }
         List<TagResponse> tagResponses = tags.stream().map(this::getTagResponse).collect(Collectors.toList());
-        tagWeightResponse.setTags(tagResponses);
+        tagWeightResponse.setTags(normalizeTagResponse(tagResponses));
 
         return tagWeightResponse;
     }

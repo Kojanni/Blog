@@ -6,8 +6,8 @@ import com.kochetkova.api.response.*;
 import com.kochetkova.model.*;
 import com.kochetkova.repository.PostRepository;
 import com.kochetkova.service.*;
+import org.apache.commons.io.FilenameUtils;
 import org.jsoup.Jsoup;
-import org.jsoup.select.Collector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.support.PagedListHolder;
@@ -16,7 +16,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -43,12 +48,22 @@ public class PostServiceImpl implements PostService {
     private final int PUBLISHED = 3;
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatterYears = DateTimeFormatter.ofPattern("yyyy");
+    private final String separator = File.separator;
 
     @Value("${blog.post.title.length.min}")
     private int minLengthTitle;
 
     @Value("${blog.post.text.length.min}")
     private int minLengthText;
+
+    @Value("${photo.postImg.path}")
+    private String imagePath;
+
+    @Value("${photo.postImg.nameSize}")
+    private int postImgNameSize;
+
+    @Value("${photo.postImg.subfolderSize}")
+    private int postImgSubfolderSize;
 
     @Autowired
     public PostServiceImpl(PostRepository postRepository, TagService tagService, UserService userService, TagToPostService tagToPostService, SettingsService settingsService) {
@@ -60,16 +75,26 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
-     * Список всех постов
+     * Список всех постов:
+     * только активные (is_active = 1),
+     * утверждённые модератором ( moderation_status = ACCEPTED)
+     * с датой публикации не позднее текущего момента.
      *
      * @return List<Post>
      */
     @Override
     public List<Post> findAll() {
-        return postRepository.findAll();
+        return postRepository.findAllByIsActiveAndModerationStatusAndTimeBefore((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
     }
 
-    //Добавить пост
+
+    /**
+     * добавляет пост
+     *
+     * @param newPostRequest - данные добавляемого поста
+     * @param user           - пользователь, который добавляет пост
+     * @return post - добавленный пост
+     */
     @Override
     @Transactional
     public Post addPost(NewPostRequest newPostRequest, User user) {
@@ -135,6 +160,9 @@ public class PostServiceImpl implements PostService {
 
     /**
      * Получение списка всех постов в соотвествии с режимом(параметр mode)
+     * Должны выводиться только активные (is_active = 1),
+     * утверждённые модератором (moderation_status = ACCEPTED) посты
+     * с датой публикации не позднее текущего момента.
      *
      * @param mode   - режим сортировки
      * @param offset - сдвиг страницы
@@ -148,11 +176,11 @@ public class PostServiceImpl implements PostService {
         List<PostResponse> postResponses = new ArrayList<>();
         posts.forEach(post -> postResponses.add(createPostResponse(post, 1)));
 
-        List<Post> allPosts = postRepository.findAll();
+        int allPostsCount = postRepository.countByIsActiveAndModerationStatusAndTimeBefore((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
 
 
         sortedPostsResponse.setPosts(postResponses);
-        sortedPostsResponse.setCount(allPosts.size());
+        sortedPostsResponse.setCount(allPostsCount);
 
         return sortedPostsResponse;
     }
@@ -213,8 +241,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponse getPostResponseById(int id) {
-        Post post = findById(id);
+    public PostResponse getPostResponseByPost(Post post) {
         if (post.getIsActive() == 1 &&
                 post.getModerationStatus() == ModerationStatus.ACCEPTED &&
                 post.getTime().isBefore(LocalDateTime.now())) {
@@ -242,11 +269,11 @@ public class PostServiceImpl implements PostService {
         List<Post> postByYears;
 
         if (year == null) {
-            postByYears = postRepository.findAll();
+            postByYears = findAll();
         } else {
             LocalDateTime timeStart = LocalDateTime.of(year, Month.JANUARY, 1, 0, 0);
             LocalDateTime timeEnd = timeStart.plusYears(1);
-            postByYears = postRepository.findAllByTimeBetween(timeStart, timeEnd);
+            postByYears = postRepository.findAllByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(timeStart, timeEnd, (byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
         }
 
         CalendarResponse calendarResponse = new CalendarResponse();
@@ -300,18 +327,21 @@ public class PostServiceImpl implements PostService {
     @Override
     public SortedPostsResponse getSortedPostsByQuery(String query, int offset, int limit) {
         Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+        LocalDateTime time = LocalDateTime.now();
+        byte isActive = 1;
+        ModerationStatus moderationStatus = ModerationStatus.ACCEPTED;
         int count;
         List<Post> posts;
+
         if (query == null) {
-            posts = postRepository.findAllByIsActiveAndModerationStatus((byte) 1, ModerationStatus.ACCEPTED, pageable);
-            count = postRepository.findAllByIsActiveAndModerationStatus((byte) 1, ModerationStatus.ACCEPTED).size();
+            posts = postRepository.findAllByIsActiveAndModerationStatusAndTimeBefore(isActive, moderationStatus, time, pageable);
+            count = postRepository.countAllByIsActiveAndModerationStatusAndTimeBefore(isActive, moderationStatus, time);
         } else {
             posts = postRepository
-                    .findAllByIsActiveAndModerationStatusAndTextContainingIgnoreCaseOrIsActiveAndModerationStatusAndTitleContainingIgnoreCase((byte) 1, ModerationStatus.ACCEPTED, query, (byte) 1, ModerationStatus.ACCEPTED, query, pageable);
+                    .findAllByTextContainingIgnoreCaseAndIsActiveAndModerationStatusAndTimeBeforeOrTitleContainingIgnoreCaseAndIsActiveAndModerationStatusAndTimeBefore(query, isActive, moderationStatus, time, query, isActive, moderationStatus, time, pageable);
             count = postRepository
-                    .findAllByIsActiveAndModerationStatusAndTextContainingIgnoreCaseOrIsActiveAndModerationStatusAndTitleContainingIgnoreCase((byte) 1, ModerationStatus.ACCEPTED, query, (byte) 1, ModerationStatus.ACCEPTED, query).size();
+                    .countByTextContainingIgnoreCaseAndIsActiveAndModerationStatusAndTimeBeforeOrTitleContainingIgnoreCaseAndIsActiveAndModerationStatusAndTimeBefore(query, isActive, moderationStatus, time, query, isActive, moderationStatus, time);
         }
-
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
         sortedPostsResponse.setCount(count);
         sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
@@ -332,8 +362,8 @@ public class PostServiceImpl implements PostService {
 
         LocalDateTime date = LocalDate.parse(dateString, formatterDate).atStartOfDay();
 
-        List<Post> posts = postRepository.findAllByTimeBetween(date, date.plusDays(1), pageable);
-        int count = postRepository.findAllByTimeBetween(date, date.plusDays(1)).size();
+        List<Post> posts = postRepository.findAllByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(date, date.plusDays(1), (byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
+        int count = postRepository.countByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(date, date.plusDays(1), (byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
 
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
         sortedPostsResponse.setCount(count);
@@ -356,6 +386,9 @@ public class PostServiceImpl implements PostService {
                 .getPosts()
                 .stream()
                 .map(TagToPost::getPost)
+                .filter(post -> post.getIsActive() == 1)
+                .filter(post -> post.getModerationStatus() == ModerationStatus.ACCEPTED)
+                .filter(post -> post.getTime().isBefore(LocalDateTime.now()))
                 .collect(Collectors.toList());
 
         int count = posts.size();
@@ -381,27 +414,24 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public SortedPostsResponse getSortedPostsForModeration(User user, String status, int offset, int limit) {
-        List<Post> posts = new ArrayList<>();
-        int count = 0;
+
         Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
-
-        if (status.equalsIgnoreCase("new")) { // Новые
-            posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.NEW, pageable);
-            count = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.NEW).size();
-
-        } else if (status.equalsIgnoreCase("declined")) { //отклоненные модератором
-            posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.DECLINED, pageable);
-            count = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.DECLINED).size();
+        ModerationStatus moderationStatus = ModerationStatus.NEW;
+        if (status.equalsIgnoreCase("declined")) { //отклоненные модератором
+            moderationStatus = ModerationStatus.DECLINED;
 
         } else if (status.equalsIgnoreCase("accepted")) { // утвержденные модератором
-            posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.ACCEPTED, pageable);
-            count = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, ModerationStatus.ACCEPTED).size();
+            moderationStatus = ModerationStatus.ACCEPTED;
         }
+
+        List<Post> posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, moderationStatus, pageable);
+        int count = postRepository.countByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, moderationStatus);
 
         //формирование ответа
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
-        sortedPostsResponse.setCount(count);
         sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        sortedPostsResponse.setCount(count);
+
         return sortedPostsResponse;
     }
 
@@ -446,9 +476,72 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public StatisticsResponse getStatistics() {
-        List<Post> posts = postRepository.findAll();
+        List<Post> posts = findAll();
 
         return getStatisticsResponse(posts);
+    }
+
+    /**
+     * Загрузка изображений
+     * <p>
+     * Авторизация: требуется
+     *
+     * @param image - картинка для поста
+     * @return Метод возвращает путь до изображения
+     */
+    @Override
+    public String savePostImage(MultipartFile image) {
+
+        if (!image.isEmpty()) {
+            String fullPath = imagePath + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getNumber(postImgNameSize) + "." + FilenameUtils.getExtension(image.getOriginalFilename());
+
+            File file = new File(fullPath);
+
+            if (!file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
+
+            while (file.exists()) {
+                fullPath = file.getParent() + getNumber(postImgNameSize) + "." + FilenameUtils.getExtension(image.getOriginalFilename());
+                file = new File(fullPath);
+            }
+
+            try {
+                BufferedImage bufferedImage = ImageIO.read(image.getInputStream());
+                ImageIO.write(bufferedImage, FilenameUtils.getExtension(image.getOriginalFilename()), file);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return "/" + fullPath.replace("\\", "/");
+        }
+        return null;
+    }
+
+    /**
+     * получение строки из букв a-z указанной длины
+     *
+     * @param length - длина
+     */
+    private String getString(int length) {
+        return (new Random()).ints(97, 122)
+                .mapToObj(i -> (char) i)
+                .limit(length)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
+    /**
+     * получение строки из цифр 0-9 указанной длины
+     *
+     * @param length - длина
+     */
+    private String getNumber(int length) {
+        return (new Random()).ints(48, 57)
+                .mapToObj(i -> (char) i)
+                .limit(length)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
     }
 
     /**
@@ -540,6 +633,9 @@ public class PostServiceImpl implements PostService {
 
     /**
      * получение постов в соотвествии с режимом
+     * Должны выводиться только активные (is_active = 1),
+     * утверждённые модератором (поле moderation_status = ACCEPTED) посты
+     * с датой публикации не позднее текущего момента.
      *
      * @param mode   - режим сортировки
      * @param offset - сдвиг страницы
@@ -550,40 +646,21 @@ public class PostServiceImpl implements PostService {
         List<Post> posts = new ArrayList<>();
         if (mode.equalsIgnoreCase(this.MODE[RECENT])) { //по дате публикации новые
             Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
-            posts = postRepository.findAllByOrderByTimeDesc(pageable);
+            posts = postRepository.findAllByIsActiveAndModerationStatusAndTimeBeforeOrderByTimeDesc((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
 
         } else if (mode.equalsIgnoreCase(this.MODE[BEST])) { //по убыванию лайков
-            posts = postRepository.findAll();
-            posts.sort((o1, o2) -> {
-                long likeO1 = o1.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count();
-                long likeO2 = o2.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count();
-                if (likeO1 > likeO2) {
-                    return -1;
-                } else if (likeO1 < likeO2) {
-                    return 1;
-                }
-                return 0;
-            });
-
-            posts = getPostsPage(offset, limit, posts);
+            Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+            posts = postRepository.findAllOrderByLikes((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
 
         } else if (mode.equalsIgnoreCase(this.MODE[POPULAR])) { //по убыванию комментов
-            posts = postRepository.findAll();
-            posts.sort((o1, o2) -> {
-                if (o1.getComments().size() > o2.getComments().size()) {
-                    return -1;
-                } else if (o1.getComments().size() < o2.getComments().size()) {
-                    return 1;
-                }
-                return 0;
-            });
-
-            posts = getPostsPage(offset, limit, posts);
+            Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+            posts = postRepository.findAllOrderByComments((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
 
         } else if (mode.equalsIgnoreCase(this.MODE[EARLY])) { //по дате публикации старые
             Pageable pageable = getPageable(offset, limit, Sort.Direction.ASC, PostRepository.POST_TIME);
-            posts = postRepository.findAllByOrderByTimeAsc(pageable);
+            posts = postRepository.findAllByIsActiveAndModerationStatusAndTimeBeforeOrderByTimeAsc((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
         }
+
         return posts;
     }
 
@@ -614,6 +691,8 @@ public class PostServiceImpl implements PostService {
         post.setTitle(newPostRequest.getTitle());
         post.setText(newPostRequest.getText());
         post.setViewCount(0);
+        //todo: кто модератор?????
+        post.setModerator(userService.findUserById(1));
 
         //проверка глобальных настроек сайта
         if (!settingsService.getSettings().isPostPremoderation()) {
@@ -650,7 +729,7 @@ public class PostServiceImpl implements PostService {
      * инициализация полей объекта Post из данных поступивших по запросу
      */
     @Override
-    public void getExistPost(NewPostRequest newPostRequest, Post post) {
+    public void getPostToNewPostRequest(NewPostRequest newPostRequest, Post post) {
 
         post.setTime(checkTime(newPostRequest));
         post.setIsActive(newPostRequest.getActive());

@@ -46,7 +46,7 @@ blog:
     comment:
       text:
         length:
-          min: 50
+          min: 25
 
 captcha:
   lifetime: 60
@@ -57,7 +57,13 @@ captcha:
   wordLength: 5
 
 photo:
-  path: avatar
+  avatarPath: upload/avatars
+  width: 36
+  height: 36
+  postImg:
+    path: upload/images
+    nameSize: 5
+    subfolderSize: 2
 
 password:
   length:
