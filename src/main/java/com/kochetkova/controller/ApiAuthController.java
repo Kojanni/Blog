@@ -2,12 +2,11 @@ package com.kochetkova.controller;
 
 import com.kochetkova.api.request.LoginRequest;
 import com.kochetkova.api.request.NewUserRequest;
+import com.kochetkova.api.request.ResetPasswordRequest;
 import com.kochetkova.api.request.UserEmailRequest;
-import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.*;
 import com.kochetkova.model.User;
 import com.kochetkova.service.CaptchaCodeService;
-import com.kochetkova.service.MailSender;
 import com.kochetkova.service.SettingsService;
 import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,11 +61,11 @@ public class ApiAuthController {
 
         String sessionId = request.getRequestedSessionId();
         if (userService.findAuthSession(sessionId)) {
-            User userInfo = userService.findAuthUser(sessionId);
-            UserResponse user = userService.createUserResponse(userInfo);
+            User user = userService.findAuthUser(sessionId);
+            UserResponse userResponse = userService.createUserResponse(user);
 
             authUser.setResult(true);
-            authUser.setUserResponse(user);
+            authUser.setUserResponse(userResponse);
         }
 
         return new ResponseEntity<>(authUser, HttpStatus.OK);
@@ -76,7 +75,7 @@ public class ApiAuthController {
      * Восстановление пароля
      * POST /api/auth/restore
      * Авторизация: не требуется
-     *Если пользователь найден, ему должно отправляться письмо со ссылкой на восстановление пароля следующего вида - /login/change-password/HASH.
+     * Если пользователь найден, ему должно отправляться письмо со ссылкой на восстановление пароля следующего вида - /login/change-password/HASH.
      * @param userEmail - e-mail пользователя
      * @return ResultErrorResponse "result": true или false
      */
@@ -88,11 +87,21 @@ public class ApiAuthController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    //Изменение пароля
+    /**
+     * Изменение пароля
+     * POST /api/auth/password
+     * Авторизация: не требуется
+     * @param resetPasswordRequest - код восстановления пароля и коды капчи
+     * @return ResultErrorResponse
+     * В случае, если все данные отправлены верно: "result": true
+     * В случае ошибок: "result": false + "errors":
+     */
     @PostMapping("/password")
-    public ResponseEntity<Object> setNewPassword() {
+    public ResponseEntity<ResultErrorResponse> setNewPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
         //todo
-        return null;
+        ResultErrorResponse resultErrorResponse = userService.setNewPassword(resetPasswordRequest);
+
+        return  new ResponseEntity<>(resultErrorResponse, HttpStatus.OK);
     }
 
     //Регистрация пользователя
