@@ -13,11 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/api")
@@ -65,17 +67,20 @@ public class ApiGeneralController {
      * @return Метод возвращает путь до изображения
      */
     @PostMapping("/image")
-    public ResponseEntity<Object> loadPicForPost(HttpServletRequest request,
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<Object> loadPicForPost(Principal principal,
                                                  @RequestParam MultipartFile image) {
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
 
-        //todo Загрузка изображений
         String imagePath = postService.savePostImage(image);
+
+        if (imagePath == null) { //если расширение не то
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+
         return new ResponseEntity<>(imagePath, HttpStatus.OK);
     }
 
@@ -83,6 +88,7 @@ public class ApiGeneralController {
      * Отправка комментария к посту
      * POST запрос /api/comment
      * Метод добавляет комментарий к посту.
+     * Авторизация: требуется
      *
      * @param newCommentRequest - данные для нового комментария
      * @return Если параметры parent_id и/или post_id неверные (соответствующие комментарий и/или пост не существуют),
@@ -90,15 +96,15 @@ public class ApiGeneralController {
      * В случае, если текст комментария отсутствует (пустой) или слишком короткий, необходимо выдавать ошибку в JSON-формате.
      */
     @PostMapping("/comment")
-    public ResponseEntity<Object> addCommentToPost(HttpServletRequest request,
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<Object> addCommentToPost(Principal principal,
                                                    @RequestBody NewCommentRequest newCommentRequest) {
-
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
+
+        User user = userService.findUserByEmail(principal.getName());
 
         ResultErrorResponse resultError = postCommentService.checkNewCommentRequestData(newCommentRequest);
         if (!resultError.isResult()) {
@@ -120,6 +126,7 @@ public class ApiGeneralController {
      * GET /api/tag/
      * Метод выдаёт список тэгов, начинающихся на строку, заданную в параметре
      * В случае, если она не задана, выводятся все тэги.
+     * Авторизация: не требуется
      *
      * @param query -  часть тэга или тэг, может быть не задан или быть пустым.
      * @return TagWeightResponse - список тегов с относительным нормированным весом
@@ -134,6 +141,7 @@ public class ApiGeneralController {
     /**
      * Модерация поста
      * POST запрос /api/moderation
+     * Авторизация: требуется
      *
      * @param moderationPostRequest - данные для изменения статуса поста
      * @return ResultErrorResponse:
@@ -141,16 +149,15 @@ public class ApiGeneralController {
      * result = false - если по какой-то причине изменить статус не удалось
      */
     @PostMapping("/moderation")
-    public ResponseEntity<ResultErrorResponse> postModerationStatus(HttpServletRequest request,
+    public ResponseEntity<ResultErrorResponse> postModeration(Principal principal,
                                                                     @RequestBody ModerationPostRequest moderationPostRequest) {
         //todo
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
 
+        User user = userService.findUserByEmail(principal.getName());
         ResultErrorResponse result = new ResultErrorResponse();
 
         if (user.getIsModerator() == 0) {
@@ -165,6 +172,7 @@ public class ApiGeneralController {
     /**
      * Календарь(количество публикаций)
      * GET  запрос /api/calendar
+     * Авторизация: не требуется
      *
      * @param year - год, за который необходимо подсчитать количество,
      *             если не задан, то за все года
@@ -180,19 +188,24 @@ public class ApiGeneralController {
 
     /**
      * Редактирование моего профиля. Запрос c изменением данных с фото
+     * Авторизация: требуется
+     * <p>
      * POST /api/profile/my
      */
     @PostMapping(value = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResultErrorResponse> editProfileWithPhoto(HttpServletRequest request,
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultErrorResponse> editProfileWithPhoto(Principal principal,
                                                                     @RequestParam MultipartFile photo,
                                                                     @RequestParam String name,
                                                                     @RequestParam String email,
                                                                     @RequestParam(required = false) String password,
                                                                     @RequestParam Integer removePhoto) {
 
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
+        if (principal == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
 
+        User user = userService.findUserByEmail(principal.getName());
         ErrorResponse error = userService.checkEditProfile(user, name, email, password, photo);
 
         ResultErrorResponse resultError = new ResultErrorResponse();
@@ -209,17 +222,21 @@ public class ApiGeneralController {
     /**
      * Редактирование моего профиля. Запрос c изменением данных без фото
      * POST запрос /api/profile/my
+     * Авторизация: требуется
      *
      * @param editProfile - данные для редактирования
      * @return ResultErrorResponse: результат true, если все изменено без ошибок
      * резутат false + список ошибок, если нет
      */
     @PostMapping("/profile/my")
-    public ResponseEntity<ResultErrorResponse> editProfile(HttpServletRequest request, @RequestBody EditProfileRequest editProfile) {
-        //todo
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultErrorResponse> editProfile(Principal principal, @RequestBody EditProfileRequest editProfile) {
 
+        if (principal == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+
+        User user = userService.findUserByEmail(principal.getName());
         ErrorResponse error = userService.checkEditProfile(user, editProfile);
 
         ResultErrorResponse resultError = new ResultErrorResponse();
@@ -241,14 +258,14 @@ public class ApiGeneralController {
      * @return StatisticsResponse - общие количества параметров для всех публикаций, у который он является автором и доступные для чтения
      */
     @GetMapping("/statistics/my")
-    public ResponseEntity<StatisticsResponse> getUserStatistics(HttpServletRequest request) {
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<StatisticsResponse> getUserStatistics(Principal principal) {
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
 
+        User user = userService.findAuthUser(principal.getName());
         StatisticsResponse statisticsResponse = postService.getUserStatistics(user);
 
         return new ResponseEntity<>(statisticsResponse, HttpStatus.OK);
@@ -262,12 +279,15 @@ public class ApiGeneralController {
      * @return StatisticsResponse - общие количества параметров для всех публикаций, у который он является автором и доступные для чтения
      */
     @GetMapping("/statistics/all")
-    public ResponseEntity<StatisticsResponse> getStatistics(HttpServletRequest request) {
+    public ResponseEntity<StatisticsResponse> getStatistics(Principal principal) {
         //проверка настроек:
-        User user = userService.findAuthUser(request.getRequestedSessionId());
         boolean isPublic = settingsService.getSettings().isStatisticsIsPublic();
-
-        if (isPublic || (!isPublic && user.getIsModerator() == (byte) 1)) {
+        //статистика разрешена для всех
+        if (isPublic) {
+            return new ResponseEntity<>(postService.getStatistics(), HttpStatus.OK);
+        }
+        //для модератора только
+        if (!isPublic && principal != null && userService.findUserByEmail(principal.getName()).getIsModerator() == 1) {
             return new ResponseEntity<>(postService.getStatistics(), HttpStatus.OK);
         }
 
@@ -297,15 +317,17 @@ public class ApiGeneralController {
      * @return Метод записывает глобальные настройки блога в таблицу global_settings, если запрашивающий пользователь авторизован и является модератором.
      */
     @PutMapping("/settings")
-    public ResponseEntity<SettingsResponse> putSettings(HttpServletRequest request, @RequestBody SettingsRequest settingsRequest) {
-        //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null || user.getIsModerator() == 0) {
-            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
-        }
-        //--
+    @PreAuthorize("hasAuthority('user:moderate')")
+    public ResponseEntity<SettingsResponse> putSettings(HttpServletRequest request, Principal principal, @RequestBody SettingsRequest settingsRequest) {
 
-        settingsService.saveSettings(settingsRequest);
+        if (principal == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        } else {
+            User user = userService.findAuthUser(request.getRequestedSessionId());
+            if (user != null && user.getIsModerator() == 1) {
+                settingsService.saveSettings(settingsRequest);
+            }
+        }
 
         return new ResponseEntity<>(null, HttpStatus.OK);
     }

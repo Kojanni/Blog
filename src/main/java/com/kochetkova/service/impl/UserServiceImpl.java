@@ -9,14 +9,21 @@ import com.kochetkova.api.response.UserResponse;
 import com.kochetkova.model.ModerationStatus;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
+import com.kochetkova.service.CaptchaCodeService;
 import com.kochetkova.service.MailSender;
 import com.kochetkova.service.UserService;
+import com.kochetkova.service.impl.enums.ModeUserInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -26,16 +33,19 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private UserRepository userRepository;
-    private MailSender mailSender;
+    private final UserRepository userRepository;
+    private final CaptchaCodeService captchaCodeService;
+    private final MailSender mailSender;
+
+    private final AuthenticationManager authenticationManager;
+
     private static final String EMAIL_REG = "^([a-zA-Z0-9_\\-.]+)@([a-zA-Z0-9_\\-.]+)\\.([a-zA-Z]{2,5})$";
     private static final String NAME_REG = "[A-ZА-Яa-zа-я]+";
     private final String separator = File.separator;
+
     private static Map<String, Integer> sessions = new HashMap<>();
 
     @Value("${photo.avatarPath}")
@@ -52,10 +62,25 @@ public class UserServiceImpl implements UserService {
     @Value("${password.length.min}")
     private int passwordLengthMin;
 
+    private final PasswordEncoder encoder;
+
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, MailSender mailSender) {
+    public UserServiceImpl(UserRepository userRepository, CaptchaCodeService captchaCodeService, MailSender mailSender, AuthenticationManager authenticationManager, PasswordEncoder encoder) {
         this.userRepository = userRepository;
+        this.captchaCodeService = captchaCodeService;
         this.mailSender = mailSender;
+        this.authenticationManager = authenticationManager;
+        this.encoder = encoder;
+    }
+
+    @Override
+    public User auth(String email, String password) {
+
+        Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        org.springframework.security.core.userdetails.User userAuth = (org.springframework.security.core.userdetails.User) auth.getPrincipal();
+
+        return findUserByEmail(userAuth.getUsername());
     }
 
     @Override
@@ -77,7 +102,7 @@ public class UserServiceImpl implements UserService {
     //Поиск пользовавтеля по email
     @Override
     public User findUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
+        return userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User " + email + " not found in DB. "));
     }
 
     //Поиск пользовавтеля по ID
@@ -310,7 +335,7 @@ public class UserServiceImpl implements UserService {
     public boolean deletePhoto(User user) {
 
         String fullPath = user.getPhoto();
-        if (fullPath.equalsIgnoreCase("")) {
+        if (fullPath == null || fullPath.equalsIgnoreCase("")) {
             return true;
         }
         File file = new File(fullPath.substring(1).replace("/", "\\"));
@@ -326,7 +351,7 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setName(newUser.getName());
         user.setEmail(newUser.getEmail());
-        user.setPassword(newUser.getPassword());
+        user.setPassword(encoder.encode(newUser.getPassword()));
         user.setIsModerator((byte) 0);
         user.setRegTime(LocalDateTime.now());
 
@@ -343,13 +368,13 @@ public class UserServiceImpl implements UserService {
      * @return объект класса UserResponse
      */
     @Override
-    public UserResponse createUserResponse(User user, int mode) {
+    public UserResponse createUserResponse(User user, ModeUserInfo mode) {
         UserResponse.UserResponseBuilder userResponseBuilder = UserResponse.builder();
-        if (mode >= 1) {
-            userResponseBuilder.id(user.getId());
-            userResponseBuilder.name(user.getName());
-        }
-        if (mode >= 2) {
+
+        userResponseBuilder.id(user.getId());
+        userResponseBuilder.name(user.getName());
+
+        if (mode.equals(ModeUserInfo.ID_NAME_PHOTO)) {
             userResponseBuilder.photo(user.getPhoto());
         }
 
@@ -413,7 +438,35 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public ResultErrorResponse setNewPassword(ResetPasswordRequest resetPasswordRequest) {
+        ResultErrorResponse resultErrorResponse = new ResultErrorResponse();
+        ErrorResponse.ErrorResponseBuilder errorResponseBuilder = ErrorResponse.builder();
 
-        return null;
+        User user = userRepository.findByCode(resetPasswordRequest.getCode());
+
+        if (!captchaCodeService.checkCaptcha(resetPasswordRequest.getCaptcha(), resetPasswordRequest.getCaptchaSecret())) {
+            errorResponseBuilder.captcha("Код с картинки введён неверно");
+        }
+
+        if (!checkPassword(resetPasswordRequest.getPassword())) {
+            errorResponseBuilder.password("Пароль короче 6-ти символов");
+        }
+
+        if ( user == null) {
+            errorResponseBuilder.code("Ссылка для восстановления пароля устарела."
+                           + " <a href="
+                    + "\\\"/auth/restore\">Запросить ссылку снова</a>");
+        }
+
+        ErrorResponse errors = errorResponseBuilder.build();
+        if (!errors.isPresent()) {
+            user.setPassword(resetPasswordRequest.getPassword());
+            user.setCode("");
+            saveUser(user);
+            resultErrorResponse.setResult(true);
+        } else {
+            resultErrorResponse.setErrors(errors);
+        }
+
+        return resultErrorResponse;
     }
 }

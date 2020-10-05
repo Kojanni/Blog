@@ -7,6 +7,7 @@ import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -23,6 +24,7 @@ public class FileUploadExceptionAdvice {
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultErrorResponse> handleMaxSizeException(HttpServletRequest request)  {
         String sessionId = request.getRequestedSessionId();
         User user = userService.findAuthUser(sessionId);

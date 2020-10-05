@@ -6,6 +6,8 @@ import com.kochetkova.api.response.*;
 import com.kochetkova.model.*;
 import com.kochetkova.repository.PostRepository;
 import com.kochetkova.service.*;
+import com.kochetkova.service.impl.enums.ModePostInfo;
+import com.kochetkova.service.impl.enums.ModeUserInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,16 +38,19 @@ public class PostServiceImpl implements PostService {
     private UserService userService;
     private TagToPostService tagToPostService;
     private SettingsService settingsService;
+
     private final String[] MODE = {"recent", "popular", "best", "early"};
     private final int RECENT = 0;
     private final int POPULAR = 1;
     private final int BEST = 2;
     private final int EARLY = 3;
+
     private final String[] STATUS = {"inactive", "pending", "declined", "published"};
     private final int INACTIVE = 0;
     private final int PENDING = 1;
     private final int DECLINED = 2;
     private final int PUBLISHED = 3;
+
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatterYears = DateTimeFormatter.ofPattern("yyyy");
     private final String separator = File.separator;
@@ -174,7 +179,7 @@ public class PostServiceImpl implements PostService {
 
         List<Post> posts = getModePosts(mode, offset, limit);
         List<PostResponse> postResponses = new ArrayList<>();
-        posts.forEach(post -> postResponses.add(createPostResponse(post, 1)));
+        posts.forEach(post -> postResponses.add(createPostResponse(post, ModePostInfo.SHORTINFO_COUNT)));
 
         int allPostsCount = postRepository.countByIsActiveAndModerationStatusAndTimeBefore((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
 
@@ -231,7 +236,7 @@ public class PostServiceImpl implements PostService {
 
         //формирование ответа
         List<PostResponse> postResponses = new ArrayList<>();
-        posts.forEach(post -> postResponses.add(createPostResponse(post, 1)));
+        posts.forEach(post -> postResponses.add(createPostResponse(post, ModePostInfo.SHORTINFO_COUNT)));
 
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
         sortedPostsResponse.setPosts(postResponses);
@@ -246,7 +251,7 @@ public class PostServiceImpl implements PostService {
                 post.getModerationStatus() == ModerationStatus.ACCEPTED &&
                 post.getTime().isBefore(LocalDateTime.now())) {
 
-            return createPostResponse(post, 2);
+            return createPostResponse(post, ModePostInfo.INFO_COUNT_COMMENT_TAG);
         }
         return null;
     }
@@ -344,7 +349,7 @@ public class PostServiceImpl implements PostService {
         }
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
         sortedPostsResponse.setCount(count);
-        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, ModePostInfo.SHORTINFO_COUNT)).collect(Collectors.toList()));
         return sortedPostsResponse;
     }
 
@@ -367,7 +372,7 @@ public class PostServiceImpl implements PostService {
 
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
         sortedPostsResponse.setCount(count);
-        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, ModePostInfo.SHORTINFO_COUNT)).collect(Collectors.toList()));
         return sortedPostsResponse;
     }
 
@@ -396,7 +401,7 @@ public class PostServiceImpl implements PostService {
 
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
         sortedPostsResponse.setCount(count);
-        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, ModePostInfo.SHORTINFO_COUNT)).collect(Collectors.toList()));
         return sortedPostsResponse;
     }
 
@@ -429,7 +434,7 @@ public class PostServiceImpl implements PostService {
 
         //формирование ответа
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
-        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, 1)).collect(Collectors.toList()));
+        sortedPostsResponse.setPosts(posts.stream().map(post -> createPostResponse(post, ModePostInfo.SHORTINFO_COUNT)).collect(Collectors.toList()));
         sortedPostsResponse.setCount(count);
 
         return sortedPostsResponse;
@@ -493,7 +498,11 @@ public class PostServiceImpl implements PostService {
     public String savePostImage(MultipartFile image) {
 
         if (!image.isEmpty()) {
-            String fullPath = imagePath + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getNumber(postImgNameSize) + "." + FilenameUtils.getExtension(image.getOriginalFilename());
+            String extension = FilenameUtils.getExtension(image.getOriginalFilename());
+            if (!(extension.equalsIgnoreCase("jpg") || extension.equalsIgnoreCase("png"))) {
+                return null;
+            }
+            String fullPath = imagePath + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getNumber(postImgNameSize) + "." + extension;
 
             File file = new File(fullPath);
 
@@ -502,13 +511,13 @@ public class PostServiceImpl implements PostService {
             }
 
             while (file.exists()) {
-                fullPath = file.getParent() + getNumber(postImgNameSize) + "." + FilenameUtils.getExtension(image.getOriginalFilename());
+                fullPath = file.getParent() + getNumber(postImgNameSize) + "." + extension;
                 file = new File(fullPath);
             }
 
             try {
                 BufferedImage bufferedImage = ImageIO.read(image.getInputStream());
-                ImageIO.write(bufferedImage, FilenameUtils.getExtension(image.getOriginalFilename()), file);
+                ImageIO.write(bufferedImage, extension, file);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -582,36 +591,40 @@ public class PostServiceImpl implements PostService {
      * @param post - данные поста, полученные из БД;
      * @param mode - режим сложности для ответа:
      *             1 - простой, без списком комментов, тегов,
-     *             2 - усложненный, с комментариями и тегами, вместо анонса полный текст, юзер с фото.
+     *             2 - усложненный, с комментариями и тегами, вместо анонса полный текст.
      */
-    private PostResponse createPostResponse(Post post, int mode) {
+    private PostResponse createPostResponse(Post post, ModePostInfo mode) {
         PostResponse.PostResponseBuilder postBuilder = PostResponse.builder();
-        if (mode >= 1) {
-            postBuilder.id(post.getId());
-            postBuilder.timestamp(post.getTime());
-            postBuilder.user(userService.createUserResponse(post.getUser(), 1));
-            postBuilder.title(post.getTitle());
+        postBuilder.id(post.getId());
+        postBuilder.timestamp(post.getTime());
+        postBuilder.title(post.getTitle());
+        postBuilder.likeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count());
+        postBuilder.dislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
+        postBuilder.viewCount(post.getViewCount());
+
+        if (mode.equals(ModePostInfo.SHORTINFO_COUNT)) {
+            postBuilder.user(userService.createUserResponse(post.getUser(), ModeUserInfo.ID_NAME));
             postBuilder.announce(html2text(post.getText()));
-            postBuilder.likeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count());
-            postBuilder.dislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
             postBuilder.commentCount(post.getComments().size());
-            postBuilder.viewCount(post.getViewCount());
         }
-        if (mode >= 2) {
+
+        if (mode.equals(ModePostInfo.INFO_COUNT_COMMENT_TAG)) {
+            postBuilder.user(userService.createUserResponse(post.getUser(),  ModeUserInfo.ID_NAME));
+
+            postBuilder.text(post.getText());
+
             postBuilder.comments(post.getComments()
                     .stream()
                     .map(this::createCommentResponse)
                     .collect(Collectors.toList()));
+
             postBuilder.tags(post.getTags()
                     .stream()
                     .map(TagToPost::getTag)
                     .map(Tag::getName)
                     .collect(Collectors.toList()));
-            postBuilder.active(post.getIsActive() == 1);
-            postBuilder.announce(null);
-            postBuilder.text(post.getText());
-            postBuilder.commentCount(null);
 
+            postBuilder.active(post.getIsActive() == 1);
         }
         return postBuilder.build();
     }
@@ -749,7 +762,7 @@ public class PostServiceImpl implements PostService {
         commentResponseBuilder.id(postComment.getId());
         commentResponseBuilder.text(postComment.getText());
         commentResponseBuilder.time(postComment.getTime());
-        commentResponseBuilder.user(userService.createUserResponse(postComment.getUser(), 2));
+        commentResponseBuilder.user(userService.createUserResponse(postComment.getUser(),  ModeUserInfo.ID_NAME_PHOTO));
 
         return commentResponseBuilder.build();
     }

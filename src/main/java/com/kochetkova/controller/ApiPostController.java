@@ -14,11 +14,13 @@ import com.kochetkova.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.Principal;
 
 @Controller
 @Transactional
@@ -38,6 +40,7 @@ public class ApiPostController {
     /**
      * добавляет пост
      * POST запрос /api/post
+     * Авторизация: требуется
      *
      * @param newPostRequest - данные добавляемого поста
      * @return 200 в любом случае + resultError:
@@ -45,14 +48,15 @@ public class ApiPostController {
      * false + error - есть ошибки в данных.
      */
     @PostMapping("")
-    public ResponseEntity<ResultErrorResponse> addPosts(HttpServletRequest request, @RequestBody NewPostRequest newPostRequest) {
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultErrorResponse> addPosts(Principal principal, @RequestBody NewPostRequest newPostRequest) {
 
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
+
+        User user = userService.findUserByEmail(principal.getName());
         ResultErrorResponse resultError = new ResultErrorResponse();
         ErrorResponse error = postService.checkAddedPost(newPostRequest);
         if (!error.isPresent()) {
@@ -70,6 +74,7 @@ public class ApiPostController {
      * Должны выводиться только активные (is_active = 1),
      * утверждённые модератором (moderation_status = ACCEPTED) посты
      * с датой публикации не позднее текущего момента.
+     * Авторизация: не требуется
      *
      * @param mode   - режим вывода (сортровка)
      * @param offset - сдвиг от 0 для постграничного вывода
@@ -91,6 +96,7 @@ public class ApiPostController {
      * Поиск постов
      * Get запрос /api/post/search
      * Возвращает посты, соотвествующие поисковому запросу
+     * Авторизация: не требуется
      *
      * @param query - строка поискового запроса
      * @return 200 В любом случае
@@ -103,34 +109,6 @@ public class ApiPostController {
         SortedPostsResponse sortedPosts = postService.getSortedPostsByQuery(query, offset, limit);
 
         return new ResponseEntity<>(sortedPosts, HttpStatus.OK);
-    }
-
-    /**
-     * Получение поста /api/post/{id}
-     *
-     * @param id - номер поста
-     * @return 404 - если пост не найден,
-     * 200 + PostResponse(с комментариями и тегами - режим 2)
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<PostResponse> getPost(HttpServletRequest request, @PathVariable int id) {
-        Post post = postService.findById(id);
-
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
-
-
-        if (user != null
-                && !(user.getIsModerator() == 1
-                || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
-            postService.upViewCountOfPost(post);
-        }
-        PostResponse postResponse = postService.getPostResponseByPost(post);
-        if (postResponse == null) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-        }
-
-        return new ResponseEntity<>(postResponse, HttpStatus.OK);
     }
 
     /**
@@ -176,6 +154,7 @@ public class ApiPostController {
      * Список постов на модерацию
      * GET запрос /api/post/moderation
      * Должны выводиться только активные (is_active = 1) посты
+     * Авторизация: требуется
      *
      * @param status - статус модерации:
      *               new - новые, необходжима модерация,
@@ -187,16 +166,17 @@ public class ApiPostController {
      * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
      */
     @GetMapping("/moderation")
-    public ResponseEntity<SortedPostsResponse> getPostForModeration(HttpServletRequest request,
+    @PreAuthorize("hasAuthority('user:moderate')")
+    public ResponseEntity<SortedPostsResponse> getPostForModeration(Principal principal,
                                                                     @RequestParam("status") String status,
                                                                     @RequestParam("offset") int offset,
                                                                     @RequestParam("limit") int limit) {
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
+
+        User user = userService.findUserByEmail(principal.getName());
         SortedPostsResponse sortedPostsResponse = postService.getSortedPostsForModeration(user, status, offset, limit);
 
         return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
@@ -218,37 +198,73 @@ public class ApiPostController {
      * Посты воращаются в формате SortedPostsResponse, при отсутствии постов вернуть пустой класс
      */
     @GetMapping("/my")
-    public ResponseEntity<SortedPostsResponse> getUserPosts(HttpServletRequest request,
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<SortedPostsResponse> getUserPosts(Principal principal,
                                                             @RequestParam String status,
                                                             @RequestParam int offset,
                                                             @RequestParam int limit) {
+
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
 
+        User user = userService.findUserByEmail(principal.getName());
         SortedPostsResponse sortedPostsResponse = postService.getSortedPostsById(user.getId(), status, offset, limit);
 
         return new ResponseEntity<>(sortedPostsResponse, HttpStatus.OK);
     }
 
     /**
+     * Получение поста /api/post/{id}
+     * Авторизация: не требуется
+     * Метод выводит данные конкретного поста для отображения на странице поста.
+     * Выводит пост в любом случае, если пост активен (is_active = 1),
+     * принят модератором ( moderation_status = ACCEPTED),
+     * время его публикации <= текущему времени
+     *
+     * @param id - номер поста
+     * @return 404 - если пост не найден,
+     * 200 + PostResponse(с комментариями и тегами - режим 2)
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<PostResponse> getPost(Principal principal, @PathVariable int id) {
+        Post post = postService.findById(id);
+
+        if (principal != null) {
+            User user = userService.findUserByEmail(principal.getName());
+            if (user != null
+                    && !(user.getIsModerator() == 1
+                    || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
+                postService.upViewCountOfPost(post);
+            }
+        }
+
+        PostResponse postResponse = postService.getPostResponseByPost(post);
+        if (postResponse == null) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(postResponse, HttpStatus.OK);
+    }
+
+    /**
      * Редактирование поста
      * PUT запрос /api/post/{id}
+     * Авторизация: требуется
      *
      * @param id - номер редактируемого поста
      * @return resultError
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ResultErrorResponse> editPost(HttpServletRequest request, @PathVariable("id") int id, @RequestBody NewPostRequest newPostRequest) {
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultErrorResponse> editPost(Principal principal, @PathVariable("id") int id, @RequestBody NewPostRequest newPostRequest) {
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
+
+        User user = userService.findUserByEmail(principal.getName());
         ResultErrorResponse resultError = new ResultErrorResponse();
         ErrorResponse error = postService.checkAddedPost(newPostRequest);
         if (!error.isPresent()) {
@@ -262,22 +278,25 @@ public class ApiPostController {
 
     /**
      * добавление лайка
+     * POST /api/post/like
+     * Авторизация: требуется
      *
      * @param newVoteRequest - номер поста
      * @return result   = true - если лайк прошел,
      * = false - если нет
      */
     @PostMapping("/like")
-    public ResponseEntity<ResultErrorResponse> postLike(HttpServletRequest request, @RequestBody NewVoteRequest newVoteRequest) {
-
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultErrorResponse> postLike(HttpServletRequest request, Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
+//todo: проверить обновление возвращаемого поста
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null &&
+                userService.findAuthSession(request.getRequestedSessionId())) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
-        Post post = postService.findById(newVoteRequest.getPostId());
 
+        User user = userService.findUserByEmail(principal.getName());
+        Post post = postService.findById(newVoteRequest.getPostId());
         ResultErrorResponse resultErrorResponse = postVoteService.addLike(post, user);
 
         return new ResponseEntity<>(resultErrorResponse, HttpStatus.OK);
@@ -285,22 +304,25 @@ public class ApiPostController {
 
     /**
      * добавление дизлайка
+     * POST /api/post/dislike
+     * Авторизация: требуется
      *
      * @param newVoteRequest - номер поста
      * @return result   = true - если лайк прошел,
      * = false - если нет
      */
     @PostMapping("/dislike")
-    public ResponseEntity<ResultErrorResponse> postDislike(HttpServletRequest request, @RequestBody NewVoteRequest newVoteRequest) {
-
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<ResultErrorResponse> postDislike(HttpServletRequest request, Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
+//todo: проверить обновление возвращаемого поста
         //Авторизация есть?
-        User user = userService.findAuthUser(request.getRequestedSessionId());
-        if (user == null) {
+        if (principal == null &&
+                userService.findAuthSession(request.getRequestedSessionId())) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
-        //--
-        Post post = postService.findById(newVoteRequest.getPostId());
 
+        User user = userService.findUserByEmail(principal.getName());
+        Post post = postService.findById(newVoteRequest.getPostId());
         ResultErrorResponse resultErrorResponse = postVoteService.addDislike(post, user);
 
         return new ResponseEntity<>(resultErrorResponse, HttpStatus.OK);

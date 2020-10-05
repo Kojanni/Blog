@@ -7,10 +7,14 @@ import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.UserResponse;
 import com.kochetkova.model.User;
+import com.kochetkova.service.impl.enums.ModeUserInfo;
 import org.springframework.web.multipart.MultipartFile;
 
 
 public interface UserService {
+
+    User auth(String email, String password);
+
     void saveUser(User user);
 
     boolean addNewUser(NewUserRequest user);
@@ -53,7 +57,7 @@ public interface UserService {
 
     User createNewUser(NewUserRequest newUser);
 
-    UserResponse createUserResponse(User user, int mode);
+    UserResponse createUserResponse(User user, ModeUserInfo mode);
 
     UserResponse createUserResponse(User userInfo);
 

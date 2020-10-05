@@ -11,7 +11,7 @@ VALUES (
     'kj@gmail.com',
     1,
     'Jane',
-    '111111',
+    '$2y$12$6SJlDmCaW2.OuDmdOJwWq.a3io3KbYr67.QsqI1zU5mFYtngvLLOK',
     '2020-08-08'
     );
 
@@ -28,6 +28,6 @@ VALUES (
     'kjanni22@gmail.com',
     0,
     'Evgeniia',
-    '111111',
+    '$2y$12$6SJlDmCaW2.OuDmdOJwWq.a3io3KbYr67.QsqI1zU5mFYtngvLLOK',
     '2020-08-08'
     );
