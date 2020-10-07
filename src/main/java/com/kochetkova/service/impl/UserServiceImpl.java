@@ -459,7 +459,7 @@ public class UserServiceImpl implements UserService {
 
         ErrorResponse errors = errorResponseBuilder.build();
         if (!errors.isPresent()) {
-            user.setPassword(resetPasswordRequest.getPassword());
+            user.setPassword(encoder.encode(resetPasswordRequest.getPassword()));
             user.setCode("");
             saveUser(user);
             resultErrorResponse.setResult(true);
