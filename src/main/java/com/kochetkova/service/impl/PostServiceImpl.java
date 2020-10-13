@@ -257,9 +257,13 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void upViewCountOfPost(Post post) {
-        post.setViewCount(post.getViewCount() + 1);
-        savePost(post);
+    public void addViewToPost(Post post, User user) {
+        if (user != null
+                && !(user.getIsModerator() == 1
+                || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
+            post.setViewCount(post.getViewCount() + 1);
+            savePost(post);
+        }
     }
 
     /**
@@ -609,7 +613,7 @@ public class PostServiceImpl implements PostService {
         }
 
         if (mode.equals(ModePostInfo.INFO_COUNT_COMMENT_TAG)) {
-            postBuilder.user(userService.createUserResponse(post.getUser(),  ModeUserInfo.ID_NAME));
+            postBuilder.user(userService.createUserResponse(post.getUser(), ModeUserInfo.ID_NAME));
 
             postBuilder.text(post.getText());
 
@@ -762,7 +766,7 @@ public class PostServiceImpl implements PostService {
         commentResponseBuilder.id(postComment.getId());
         commentResponseBuilder.text(postComment.getText());
         commentResponseBuilder.time(postComment.getTime());
-        commentResponseBuilder.user(userService.createUserResponse(postComment.getUser(),  ModeUserInfo.ID_NAME_PHOTO));
+        commentResponseBuilder.user(userService.createUserResponse(postComment.getUser(), ModeUserInfo.ID_NAME_PHOTO));
 
         return commentResponseBuilder.build();
     }

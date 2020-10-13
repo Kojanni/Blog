@@ -101,7 +101,7 @@ public class ApiAuthController {
      */
     @PostMapping("/restore")
     public ResponseEntity<ResultErrorResponse> restorePassword(@RequestBody UserEmailRequest userEmail) {
-        //todo: восстановление пароля, почта
+
         ResultErrorResponse result = userService.restorePassword(userEmail.getEmail());
 
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -119,7 +119,6 @@ public class ApiAuthController {
      */
     @PostMapping("/password")
     public ResponseEntity<ResultErrorResponse> setNewPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
-        //todo: восстановление пароля, почта
 
         ResultErrorResponse resultErrorResponse = userService.setNewPassword(resetPasswordRequest);
 

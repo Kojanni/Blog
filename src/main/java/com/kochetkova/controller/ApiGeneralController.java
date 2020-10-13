@@ -150,9 +150,7 @@ public class ApiGeneralController {
      */
     @PostMapping("/moderation")
     public ResponseEntity<ResultErrorResponse> postModeration(Principal principal,
-                                                                    @RequestBody ModerationPostRequest moderationPostRequest) {
-        //todo
-        //Авторизация есть?
+                                                              @RequestBody ModerationPostRequest moderationPostRequest) {
         if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }

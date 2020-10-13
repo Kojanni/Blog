@@ -30,7 +30,7 @@ public interface PostService {
 
     PostResponse getPostResponseByPost(Post Post);
 
-    void upViewCountOfPost(Post post);
+    void addViewToPost(Post post, User user);
 
     CalendarResponse getPostsCountByYear(Integer year);
 

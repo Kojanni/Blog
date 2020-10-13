@@ -229,20 +229,16 @@ public class ApiPostController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<PostResponse> getPost(Principal principal, @PathVariable int id) {
+
         Post post = postService.findById(id);
-
-        if (principal != null) {
-            User user = userService.findUserByEmail(principal.getName());
-            if (user != null
-                    && !(user.getIsModerator() == 1
-                    || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
-                postService.upViewCountOfPost(post);
-            }
-        }
-
         PostResponse postResponse = postService.getPostResponseByPost(post);
+
         if (postResponse == null) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+
+        if (principal != null) { //auth user check and add view to post
+            postService.addViewToPost(post, userService.findUserByEmail(principal.getName()));
         }
 
         return new ResponseEntity<>(postResponse, HttpStatus.OK);
