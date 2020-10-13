@@ -6,8 +6,10 @@ import com.kochetkova.api.response.*;
 import com.kochetkova.model.*;
 import com.kochetkova.repository.PostRepository;
 import com.kochetkova.service.*;
+import com.kochetkova.service.impl.enums.Mode;
 import com.kochetkova.service.impl.enums.ModePostInfo;
 import com.kochetkova.service.impl.enums.ModeUserInfo;
+import com.kochetkova.service.impl.enums.Status;
 import org.apache.commons.io.FilenameUtils;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,18 +40,6 @@ public class PostServiceImpl implements PostService {
     private UserService userService;
     private TagToPostService tagToPostService;
     private SettingsService settingsService;
-
-    private final String[] MODE = {"recent", "popular", "best", "early"};
-    private final int RECENT = 0;
-    private final int POPULAR = 1;
-    private final int BEST = 2;
-    private final int EARLY = 3;
-
-    private final String[] STATUS = {"inactive", "pending", "declined", "published"};
-    private final int INACTIVE = 0;
-    private final int PENDING = 1;
-    private final int DECLINED = 2;
-    private final int PUBLISHED = 3;
 
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatterYears = DateTimeFormatter.ofPattern("yyyy");
@@ -216,19 +206,19 @@ public class PostServiceImpl implements PostService {
         int count = 0;
         Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
 
-        if (status.equalsIgnoreCase(STATUS[INACTIVE])) { // скрытые is_active = 0;
+        if (status.equalsIgnoreCase(Status.INACTIVE.getName())) { // скрытые is_active = 0;
             posts = postRepository.findAllByUserIdAndIsActive(id, (byte) 0, pageable);
             count = postRepository.findAllByUserIdAndIsActive(id, (byte) 0).size();
 
-        } else if (status.equalsIgnoreCase(STATUS[PENDING])) { //активные без модераторации is_active = 1, moderation_status = NEW;
+        } else if (status.equalsIgnoreCase(Status.PENDING.getName())) { //активные без модераторации is_active = 1, moderation_status = NEW;
             posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.NEW, pageable);
             count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.NEW).size();
 
-        } else if (status.equalsIgnoreCase(STATUS[DECLINED])) { //отклоненные is_active = 1, moderation_status = DECLINED;
+        } else if (status.equalsIgnoreCase(Status.DECLINED.getName())) { //отклоненные is_active = 1, moderation_status = DECLINED;
             posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.DECLINED, pageable);
             count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.DECLINED).size();
 
-        } else if (status.equalsIgnoreCase(STATUS[PUBLISHED])) { //принятые is_active = 1, moderation_status = ACCEPTED;
+        } else if (status.equalsIgnoreCase(Status.PUBLISHED.getName())) { //принятые is_active = 1, moderation_status = ACCEPTED;
             posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.ACCEPTED, pageable);
             count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.ACCEPTED).size();
 
@@ -661,20 +651,18 @@ public class PostServiceImpl implements PostService {
      */
     private List<Post> getModePosts(String mode, int offset, int limit) {
         List<Post> posts = new ArrayList<>();
-        if (mode.equalsIgnoreCase(this.MODE[RECENT])) { //по дате публикации новые
-            Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+        Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+
+        if (mode.equalsIgnoreCase(Mode.RECENT.getName())) { //по дате публикации новые
             posts = postRepository.findAllByIsActiveAndModerationStatusAndTimeBeforeOrderByTimeDesc((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
 
-        } else if (mode.equalsIgnoreCase(this.MODE[BEST])) { //по убыванию лайков
-            Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+        } else if (mode.equalsIgnoreCase(Mode.BEST.getName())) { //по убыванию лайков
             posts = postRepository.findAllOrderByLikes((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
 
-        } else if (mode.equalsIgnoreCase(this.MODE[POPULAR])) { //по убыванию комментов
-            Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
+        } else if (mode.equalsIgnoreCase(Mode.POPULAR.getName())) { //по убыванию комментов
             posts = postRepository.findAllOrderByComments((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
 
-        } else if (mode.equalsIgnoreCase(this.MODE[EARLY])) { //по дате публикации старые
-            Pageable pageable = getPageable(offset, limit, Sort.Direction.ASC, PostRepository.POST_TIME);
+        } else if (mode.equalsIgnoreCase(Mode.EARLY.getName())) { //по дате публикации старые
             posts = postRepository.findAllByIsActiveAndModerationStatusAndTimeBeforeOrderByTimeAsc((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
         }
 
