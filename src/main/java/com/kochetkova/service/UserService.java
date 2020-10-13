@@ -37,9 +37,9 @@ public interface UserService {
 
     ErrorResponse checkEditProfile(User user, EditProfileRequest editProfile);
 
-    User saveEditProfile(User user, EditProfileRequest editProfile);
-
     ErrorResponse checkEditProfile(User user, String name, String email, String password, MultipartFile photo);
+
+    User saveEditProfile(User user, EditProfileRequest editProfile);
 
     User saveEditProfile(User user, String name, String email, String password, MultipartFile photo, Integer removePhoto);
 

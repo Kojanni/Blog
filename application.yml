@@ -46,7 +46,7 @@ blog:
     comment:
       text:
         length:
-          min: 25
+          min: 0
 
 captcha:
   lifetime: 60

@@ -112,7 +112,7 @@ public class ApiGeneralController {
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             }
             if (resultError.getErrors().isPresent()) { //error
-                return new ResponseEntity<>(resultError, HttpStatus.OK);
+                return new ResponseEntity<>(resultError, HttpStatus.BAD_REQUEST);
             }
         }
 
@@ -263,7 +263,7 @@ public class ApiGeneralController {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
 
-        User user = userService.findAuthUser(principal.getName());
+        User user = userService.findUserByEmail(principal.getName());
         StatisticsResponse statisticsResponse = postService.getUserStatistics(user);
 
         return new ResponseEntity<>(statisticsResponse, HttpStatus.OK);
@@ -316,12 +316,12 @@ public class ApiGeneralController {
      */
     @PutMapping("/settings")
     @PreAuthorize("hasAuthority('user:moderate')")
-    public ResponseEntity<SettingsResponse> putSettings(HttpServletRequest request, Principal principal, @RequestBody SettingsRequest settingsRequest) {
+    public ResponseEntity<SettingsResponse> putSettings(Principal principal, @RequestBody SettingsRequest settingsRequest) {
 
         if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         } else {
-            User user = userService.findAuthUser(request.getRequestedSessionId());
+            User user = userService.findUserByEmail(principal.getName());
             if (user != null && user.getIsModerator() == 1) {
                 settingsService.saveSettings(settingsRequest);
             }

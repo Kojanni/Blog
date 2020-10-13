@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 public interface TagToPostService {
     TagToPost save(Tag tag, Post post);
-    void deleteByPost( Post post);
+
+    void deleteByPost(Post post);
 
 }

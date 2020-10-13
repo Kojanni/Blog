@@ -9,9 +9,14 @@ import java.util.List;
 public interface TagService {
 
     Tag save(String tagName);
+
     Tag findByTag(String tag);
+
     List<Tag> findAll();
+
     TagResponse getTagResponse(Tag tag);
+
     List<Tag> findAllByNameStartingWith(String query);
+
     TagWeightResponse getTagWeightResponse(String query);
 }

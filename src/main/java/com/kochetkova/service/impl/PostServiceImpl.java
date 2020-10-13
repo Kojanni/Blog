@@ -143,7 +143,7 @@ public class PostServiceImpl implements PostService {
     public ErrorResponse checkAddedPost(NewPostRequest newPostRequest) {
         ErrorResponse.ErrorResponseBuilder errorBuilder = ErrorResponse.builder();
         if (!checkText(newPostRequest.getText())) {
-            errorBuilder.text("Текс публикации слишком короткий");
+            errorBuilder.text("Текст публикации слишком короткий.\nМинимальная длина: " + minLengthText + " символов");
         }
         if (!checkTitle(newPostRequest.getTitle())) {
             errorBuilder.title("Заголовок не установлен или короткий");
