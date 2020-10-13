@@ -30,6 +30,8 @@ public interface PostService {
 
     PostResponse getPostResponseByPost(Post Post);
 
+    PostResponse getPostResponseByPost(Post post, User user);
+
     void addViewToPost(Post post, User user);
 
     CalendarResponse getPostsCountByYear(Integer year);
@@ -49,4 +51,6 @@ public interface PostService {
     StatisticsResponse getStatistics();
 
     String savePostImage(MultipartFile image);
+
+
 }

@@ -235,6 +235,12 @@ public class PostServiceImpl implements PostService {
         return sortedPostsResponse;
     }
 
+    /**
+     * получение PostResponse на основе данных о посте,
+     * если пост активен, принят и опубликован до текущего времени
+     *
+     * @param post - данные о посте
+     */
     @Override
     public PostResponse getPostResponseByPost(Post post) {
         if (post.getIsActive() == 1 &&
@@ -246,11 +252,37 @@ public class PostServiceImpl implements PostService {
         return null;
     }
 
+    /**
+     * получение PostResponse на основе данных о посте,
+     * если пост активен, принят и опубликован до текущего времени
+     * или
+     * если пост запрашивает его автор
+     *
+     * @param post - данные о посте
+     * @param user - запрашивающий пользователь
+     */
+    @Override
+    public PostResponse getPostResponseByPost(Post post, User user) {
+        if ((post.getIsActive() == 1 &&
+                post.getModerationStatus() == ModerationStatus.ACCEPTED &&
+                post.getTime().isBefore(LocalDateTime.now())) ||
+                (post.getUser() == user)) {
+            return createPostResponse(post, ModePostInfo.INFO_COUNT_COMMENT_TAG);
+        }
+        return null;
+    }
+
     @Override
     public void addViewToPost(Post post, User user) {
-        if (user != null
-                && !(user.getIsModerator() == 1
-                || (post.getUser().getId() == user.getId() && user.getIsModerator() != 1))) {
+        if (user == null ||
+                (user != null &&
+                        !(user.getIsModerator() == 1 ||
+                                (post.getUser().getId() == user.getId()
+                                        && user.getIsModerator() != 1
+                                )
+                        )
+                )
+        ) {
             post.setViewCount(post.getViewCount() + 1);
             savePost(post);
         }
