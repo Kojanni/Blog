@@ -1,4 +1,4 @@
-INSERT INTO `blogdb`.`posts`
+INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
 (`id`,
 `is_active`,
 `moderation_status`,

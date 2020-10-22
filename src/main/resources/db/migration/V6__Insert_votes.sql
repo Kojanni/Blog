@@ -1,4 +1,4 @@
-INSERT INTO `blogdb`.`post_votes`
+INSERT INTO `heroku_0e321c71d2ddeb6`.`post_votes`
 (`id`,
 `time`,
 `value`,
@@ -11,7 +11,7 @@ VALUES
 1,
 1);
 
-INSERT INTO `blogdb`.`post_votes`
+INSERT INTO `heroku_0e321c71d2ddeb6`.`post_votes`
 (`id`,
 `time`,
 `value`,
@@ -24,7 +24,7 @@ VALUES
 1,
 2);
 
-INSERT INTO `blogdb`.`post_votes`
+INSERT INTO `heroku_0e321c71d2ddeb6`.`post_votes`
 (`id`,
 `time`,
 `value`,
@@ -38,7 +38,7 @@ VALUES
 1);
 
 
-INSERT INTO `blogdb`.`post_votes`
+INSERT INTO `heroku_0e321c71d2ddeb6`.`post_votes`
 (`id`,
 `time`,
 `value`,
@@ -51,7 +51,7 @@ VALUES
 2,
 2);
 
-INSERT INTO `blogdb`.`post_votes`
+INSERT INTO `heroku_0e321c71d2ddeb6`.`post_votes`
 (`id`,
 `time`,
 `value`,

@@ -13,7 +13,7 @@
         <maven.compiler.target>11</maven.compiler.target>
 
         <spring.version>2.2.4.RELEASE</spring.version>
-        <flyway.version>6.4.4</flyway.version>
+        <flyway.version>5.2.4</flyway.version>
     </properties>
 
     <parent>

@@ -290,7 +290,7 @@ public class ApiPostController {
     @PostMapping("/like")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultErrorResponse> postLike(HttpServletRequest request, Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
-//todo: проверить обновление возвращаемого поста
+
         //Авторизация есть?
         if (principal == null &&
                 userService.findAuthSession(request.getRequestedSessionId())) {

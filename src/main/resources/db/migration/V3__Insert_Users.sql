@@ -1,4 +1,4 @@
-INSERT INTO `blogdb`.`users`(
+INSERT INTO `heroku_0e321c71d2ddeb6`.`users`(
     `id`,
     `email`,
     `is_moderator`,
@@ -15,7 +15,7 @@ VALUES (
     '2020-08-08'
     );
 
-INSERT INTO `blogdb`.`users`(
+INSERT INTO `heroku_0e321c71d2ddeb6`.`users`(
     `id`,
     `email`,
     `is_moderator`,
