@@ -1,4 +1,4 @@
-INSERT INTO `heroku_0e321c71d2ddeb6`.`post_comments`
+INSERT INTO `post_comments`
 (`id`,
 `text`,
 `time`,
@@ -11,7 +11,7 @@ VALUES
 1,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`post_comments`
+INSERT INTO `post_comments`
 (`id`,
 `parent_id`,
 `text`,
@@ -26,7 +26,7 @@ VALUES
 1,
 1);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`post_comments`
+INSERT INTO `post_comments`
 (`id`,
 `text`,
 `time`,
@@ -40,7 +40,7 @@ VALUES
 2);
 
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`post_comments`
+INSERT INTO `post_comments`
 (`id`,
 `text`,
 `time`,
@@ -48,12 +48,12 @@ INSERT INTO `heroku_0e321c71d2ddeb6`.`post_comments`
 `user_id`)
 VALUES
 (4,
-'good top, thx',
+'oooo, thanks you for post (4)',
 '2020-01-02 10:10:00.000000',
 3,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`post_comments`
+INSERT INTO `post_comments`
 (`id`,
 `text`,
 `time`,
@@ -66,7 +66,7 @@ VALUES
 3,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`post_comments`
+INSERT INTO `post_comments`
 (`id`,
 `text`,
 `time`,

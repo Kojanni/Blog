@@ -1,4 +1,4 @@
-INSERT INTO `heroku_0e321c71d2ddeb6`.`tags`
+INSERT INTO `tags`
 (`id`,
 `name`)
 VALUES
@@ -15,7 +15,7 @@ VALUES
 (6,
 'special');
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`tag2post`
+INSERT INTO `tag2post`
 (`id`,
 `post_id`,
 `tag_id`)

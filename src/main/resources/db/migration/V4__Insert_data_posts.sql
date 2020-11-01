@@ -1,4 +1,4 @@
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -19,7 +19,7 @@ VALUES
 1,
 1);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -40,7 +40,7 @@ VALUES
 1,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -61,7 +61,7 @@ VALUES
 1,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -82,7 +82,7 @@ VALUES
 1,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -103,7 +103,7 @@ VALUES
 1,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -125,7 +125,7 @@ VALUES
 2);
 
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -147,7 +147,7 @@ VALUES
 2);
 
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -168,7 +168,7 @@ VALUES
 1,
 2);
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -190,7 +190,7 @@ VALUES
 2);
 
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,
@@ -212,7 +212,7 @@ VALUES
 2);
 
 
-INSERT INTO `heroku_0e321c71d2ddeb6`.`posts`
+INSERT INTO `posts`
 (`id`,
 `is_active`,
 `moderation_status`,

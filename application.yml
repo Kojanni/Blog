@@ -21,8 +21,8 @@ spring:
   mail:
     protocol: smtps
     host: smtp.gmail.com
-    username: skillboxblog@gmail.com
-    password: skillboxBlog123
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
     port: 465
 
 server:
