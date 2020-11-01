@@ -1,5 +1,5 @@
-INSERT INTO `users`(
-    `id`,
+INSERT INTO `users`
+(    `id`,
     `email`,
     `is_moderator`,
     `name`,
@@ -15,8 +15,8 @@ VALUES (
     '2020-08-08'
     );
 
-INSERT INTO `users`(
-    `id`,
+INSERT INTO `users`
+(    `id`,
     `email`,
     `is_moderator`,
     `name`,
