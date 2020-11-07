@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostRepository extends CrudRepository<Post, Integer> {
@@ -19,7 +20,6 @@ public interface PostRepository extends CrudRepository<Post, Integer> {
 
     int countByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(LocalDateTime timeStart, LocalDateTime timeEnd, byte isActive, ModerationStatus moderationStatus, LocalDateTime timeNow);
 
-    Post findById(int id);
 
     List<Post> findAllByIsActiveAndModerationStatusAndTimeBefore(byte isActive, ModerationStatus moderationStatus, LocalDateTime time);
 

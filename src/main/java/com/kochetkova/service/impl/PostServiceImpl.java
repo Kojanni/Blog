@@ -18,8 +18,10 @@ import org.springframework.beans.support.PagedListHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -32,6 +34,7 @@ import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Service
 public class PostServiceImpl implements PostService {
@@ -121,7 +124,7 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public Post putPost(int id, NewPostRequest newPostRequest, User user) {
-        Post post = postRepository.findById(id);
+        Post post = findById(id);
         editPost(post, newPostRequest, user);
         editTag(newPostRequest, post);
         return savePost(post);
@@ -185,7 +188,7 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public Post findById(int id) {
-        return postRepository.findById(id);
+        return postRepository.findById(id).orElseThrow(() -> new PostNotFoundException(id));
     }
 
     /**
@@ -475,7 +478,7 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public boolean changeModerationStatus(ModerationPostRequest moderationPostRequest) {
-        Post post = postRepository.findById(moderationPostRequest.getPostId());
+        Post post = findById(moderationPostRequest.getPostId());
         if (post != null) {
             if (moderationPostRequest.getDecision().equalsIgnoreCase("accept")) {
                 post.setModerationStatus(ModerationStatus.ACCEPTED);
@@ -844,5 +847,11 @@ public class PostServiceImpl implements PostService {
     //проверка длины текста
     private boolean checkText(String text) {
         return html2text(text).length() >= minLengthText;
+    }
+
+    @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "Post not found in DB")
+    public class PostNotFoundException extends RuntimeException {
+        public PostNotFoundException(int id) {
+        }
     }
 }

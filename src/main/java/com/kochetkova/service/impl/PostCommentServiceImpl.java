@@ -9,6 +9,7 @@ import com.kochetkova.model.User;
 import com.kochetkova.repository.PostCommentRepository;
 import com.kochetkova.repository.PostRepository;
 import com.kochetkova.service.PostCommentService;
+import com.kochetkova.service.PostService;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,15 +20,15 @@ import java.time.LocalDateTime;
 @Service
 public class PostCommentServiceImpl implements PostCommentService {
     private PostCommentRepository postCommentRepository;
-    private PostRepository postRepository;
+    private PostService postService;
 
     @Value("${blog.post.comment.text.length.min}")
     private int minLengthText;
 
     @Autowired
-    public PostCommentServiceImpl(PostCommentRepository postCommentRepository, PostRepository postRepository) {
+    public PostCommentServiceImpl(PostCommentRepository postCommentRepository, PostService postService) {
         this.postCommentRepository = postCommentRepository;
-        this.postRepository = postRepository;
+        this.postService = postService;
     }
 
 
@@ -56,8 +57,8 @@ public class PostCommentServiceImpl implements PostCommentService {
         if (!checkText(newCommentRequest.getText())) {
             errorBuilder.text("Текст комментария не задан или слишком короткий.\nМинимальная длина: " + minLengthText + " символов");
         }
-
-        if (postRepository.findById(newCommentRequest.getPostId()) == null ||
+//todo
+        if (postService.findById(newCommentRequest.getPostId()) == null ||
                 ( newCommentRequest.getParentId() != null && postCommentRepository.findByIdAndPostId(newCommentRequest.getParentId(), newCommentRequest.getPostId()) == null)) {
             errorBuilder.badRequest(true);
         }
@@ -101,7 +102,8 @@ public class PostCommentServiceImpl implements PostCommentService {
     public AddedCommentIdResponse addNewComment(NewCommentRequest newCommentRequest, User user) {
         PostComment postComment = new PostComment();
 
-        postComment.setPost(postRepository.findById(newCommentRequest.getPostId()));
+
+        postComment.setPost(postService.findById(newCommentRequest.getPostId()));
         if (newCommentRequest.getParentId() != null) {
             postComment.setParentId(newCommentRequest.getParentId());
         }
