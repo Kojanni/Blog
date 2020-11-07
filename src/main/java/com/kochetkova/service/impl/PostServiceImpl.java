@@ -73,6 +73,14 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
+     * поиск поста по id
+     */
+    @Override
+    public Post findById(int id) {
+        return postRepository.findById(id).orElseThrow(() -> new PostNotFoundException(id));
+    }
+
+    /**
      * Список всех постов:
      * только активные (is_active = 1),
      * утверждённые модератором ( moderation_status = ACCEPTED)
@@ -84,7 +92,6 @@ public class PostServiceImpl implements PostService {
     public List<Post> findAll() {
         return postRepository.findAllByIsActiveAndModerationStatusAndTimeBefore((byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
     }
-
 
     /**
      * добавляет пост
@@ -183,13 +190,7 @@ public class PostServiceImpl implements PostService {
         return sortedPostsResponse;
     }
 
-    /**
-     * поиск поста по id
-     */
-    @Override
-    public Post findById(int id) {
-        return postRepository.findById(id).orElseThrow(() -> new PostNotFoundException(id));
-    }
+
 
     /**
      * Получение списка постов пользователя соотвествии со статусом (параметр status)
