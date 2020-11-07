@@ -231,23 +231,13 @@ public class ApiPostController {
     public ResponseEntity<PostResponse> getPost(Principal principal, @PathVariable int id) {
 
         Post post = postService.findById(id);
-        PostResponse postResponse;
-        User user = null;
+        String userEmail = null;
 
         if (principal != null) {
-            user = userService.findUserByEmail(principal.getName());
-            postResponse = postService.getPostResponseByPost(post, user);
-        } else {
-            postResponse = postService.getPostResponseByPost(post);
+            userEmail = principal.getName();
         }
 
-        if (postResponse == null) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-        }
-
-        postService.addViewToPost(post, user); //auth user check and add view to post
-
-        return new ResponseEntity<>(postResponse, HttpStatus.OK);
+        return new ResponseEntity<>(postService.getPostResponse(post, userEmail), HttpStatus.OK);
     }
 
     /**

@@ -28,6 +28,8 @@ public interface PostService {
 
     void getPostToNewPostRequest(NewPostRequest newPostRequest, Post post);
 
+    PostResponse getPostResponse(Post post, String userEmail);
+
     PostResponse getPostResponseByPost(Post Post);
 
     PostResponse getPostResponseByPost(Post post, User user);

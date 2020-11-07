@@ -191,7 +191,6 @@ public class PostServiceImpl implements PostService {
     }
 
 
-
     /**
      * Получение списка постов пользователя соотвествии со статусом (параметр status)
      *
@@ -239,6 +238,26 @@ public class PostServiceImpl implements PostService {
         return sortedPostsResponse;
     }
 
+
+    @Override
+    public PostResponse getPostResponse(Post post, String userEmail) {
+
+        PostResponse postResponse;
+        User user = null;
+
+        if (userEmail != null) {
+            user = userService.findUserByEmail(userEmail);
+            postResponse = getPostResponseByPost(post, user);
+        } else {
+            postResponse = getPostResponseByPost(post);
+        }
+
+        addViewToPost(post, user); //auth user check and add view to post
+
+
+        return postResponse;
+    }
+
     /**
      * получение PostResponse на основе данных о посте,
      * если пост активен, принят и опубликован до текущего времени
@@ -267,9 +286,11 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public PostResponse getPostResponseByPost(Post post, User user) {
-        if ((post.getIsActive() == 1 &&
-                post.getModerationStatus() == ModerationStatus.ACCEPTED &&
-                post.getTime().isBefore(LocalDateTime.now())) ||
+        if ((
+                post.getIsActive() == 1 &&
+                        post.getModerationStatus() == ModerationStatus.ACCEPTED &&
+                        post.getTime().isBefore(LocalDateTime.now())
+        ) ||
                 (post.getUser() == user)) {
             return createPostResponse(post, ModePostInfo.INFO_COUNT_COMMENT_TAG);
         }
@@ -480,15 +501,12 @@ public class PostServiceImpl implements PostService {
     @Override
     public boolean changeModerationStatus(ModerationPostRequest moderationPostRequest) {
         Post post = findById(moderationPostRequest.getPostId());
-        if (post != null) {
-            if (moderationPostRequest.getDecision().equalsIgnoreCase("accept")) {
-                post.setModerationStatus(ModerationStatus.ACCEPTED);
-            } else {
-                post.setModerationStatus(ModerationStatus.DECLINED);
-            }
-            return postRepository.save(post) != null;
+        if (moderationPostRequest.getDecision().equalsIgnoreCase("accept")) {
+            post.setModerationStatus(ModerationStatus.ACCEPTED);
+        } else {
+            post.setModerationStatus(ModerationStatus.DECLINED);
         }
-        return false;
+        return postRepository.save(post) != null;
     }
 
     /**
