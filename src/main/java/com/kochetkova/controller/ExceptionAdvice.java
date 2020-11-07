@@ -13,7 +13,7 @@ public class ExceptionAdvice {
     @ExceptionHandler(PostServiceImpl.PostNotFoundException.class)
     public ResponseEntity<ResultErrorResponse> postNotFoundException()  {
 
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
 }
