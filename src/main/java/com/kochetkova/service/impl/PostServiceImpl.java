@@ -238,7 +238,12 @@ public class PostServiceImpl implements PostService {
         return sortedPostsResponse;
     }
 
-
+    /**
+     * Формирование ответа PostResponse для запроса getPost
+     * @param post - пост
+     * @param userEmail - email пользователя, =null - если не авторизован
+     * @return PostResponse
+     */
     @Override
     public PostResponse getPostResponse(Post post, String userEmail) {
 
@@ -247,15 +252,42 @@ public class PostServiceImpl implements PostService {
 
         if (userEmail != null) {
             user = userService.findUserByEmail(userEmail);
+            addViewToPost(post, user);
             postResponse = getPostResponseByPost(post, user);
         } else {
+            addViewToPost(post);
             postResponse = getPostResponseByPost(post);
         }
 
-        addViewToPost(post, user); //auth user check and add view to post
-
-
         return postResponse;
+    }
+
+    /**
+     * Добавить просмотр посту
+     * пользователь неавторизован
+     * @param post - пост
+     */
+    private void addViewToPost(Post post) {
+        post.setViewCount(post.getViewCount() + 1);
+        post = savePost(post);
+    }
+
+    /**
+     * Добавить просмотр посту
+     * Пользователь авторизован и он не модератор или автор поста
+     * @param post - пост
+     */
+    private void addViewToPost(Post post, User user) {
+        if (!(
+                user.getIsModerator() == 1 ||
+                        (
+                                post.getUser().getId() == user.getId()
+                                        && user.getIsModerator() != 1
+                        )
+        )) {
+            post.setViewCount(post.getViewCount() + 1);
+            post = savePost(post);
+        }
     }
 
     /**
@@ -297,21 +329,6 @@ public class PostServiceImpl implements PostService {
         return null;
     }
 
-    @Override
-    public void addViewToPost(Post post, User user) {
-        if (user == null ||
-                (user != null &&
-                        !(user.getIsModerator() == 1 ||
-                                (post.getUser().getId() == user.getId()
-                                        && user.getIsModerator() != 1
-                                )
-                        )
-                )
-        ) {
-            post.setViewCount(post.getViewCount() + 1);
-            savePost(post);
-        }
-    }
 
     /**
      * Календарь(количество публикаций)
