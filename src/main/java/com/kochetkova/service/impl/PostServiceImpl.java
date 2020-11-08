@@ -63,6 +63,8 @@ public class PostServiceImpl implements PostService {
     @Value("${photo.postImg.subfolderSize}")
     private int postImgSubfolderSize;
 
+    private int moderatorId = 1;
+
     @Autowired
     public PostServiceImpl(PostRepository postRepository, TagService tagService, UserService userService, TagToPostService tagToPostService, SettingsService settingsService) {
         this.postRepository = postRepository;
@@ -769,7 +771,7 @@ public class PostServiceImpl implements PostService {
         post.setText(newPostRequest.getText());
         post.setViewCount(0);
         //todo: кто модератор?????
-        post.setModerator(userService.findUserById(1));
+        post.setModerator(userService.findUserById(moderatorId));
 
         //проверка глобальных настроек сайта
         if (!settingsService.getSettings().isPostPremoderation()) {
