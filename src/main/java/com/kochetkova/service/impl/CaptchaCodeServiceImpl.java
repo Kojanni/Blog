@@ -124,7 +124,7 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
     //Scheduled:
     //clear old captcha in DB (fixedRate in milliseconds)
     @Scheduled(fixedRateString = "${captcha.scheduledRate}")
-    private void clearOldCaptcha() {
+    public void clearOldCaptcha() {
         captchaCodeRepository.deleteByTimeLessThanEqual(LocalDateTime.now().minusMinutes(lifetime));
     }
 }

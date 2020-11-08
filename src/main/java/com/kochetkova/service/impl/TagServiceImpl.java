@@ -2,6 +2,7 @@ package com.kochetkova.service.impl;
 
 import com.kochetkova.api.response.TagResponse;
 import com.kochetkova.api.response.TagWeightResponse;
+import com.kochetkova.model.ModerationStatus;
 import com.kochetkova.model.Tag;
 import com.kochetkova.repository.PostRepository;
 import com.kochetkova.repository.TagRepository;
@@ -40,7 +41,7 @@ public class TagServiceImpl implements TagService {
     }
 
     /**
-     * получить список всех существующих тегов в БД
+     * получить список всех существующих тегов опубликованных постов
      *
      * @return List<Tag>
      */
@@ -81,7 +82,18 @@ public class TagServiceImpl implements TagService {
      * @return вес тега double
      */
     private double getWeightTag(Tag tag) {
-        return Double.parseDouble(df.format((double) tag.getPosts().size() / findAll().size()).replace(",", "."));
+        return Double.parseDouble(df.format((double) tag.getPosts()
+                .stream()
+                .filter(tagToPost -> tagToPost.getPost().getModerationStatus() == ModerationStatus.ACCEPTED)
+                .count()
+                / findAll()
+                .stream()
+                .filter(t -> t.getPosts()
+                        .stream()
+                        .filter(tagToPost -> tagToPost.getPost().getModerationStatus() == ModerationStatus.ACCEPTED)
+                        .count() != 0)
+                .count())
+                .replace(",", "."));
     }
 
     /**
@@ -107,11 +119,13 @@ public class TagServiceImpl implements TagService {
 
         List<Tag> tags;
         if (query == null) {
-            tags = tagRepository.findAll();
+            tags = findAll();
         } else {
             tags = findAllByNameStartingWith(query);
         }
-        List<TagResponse> tagResponses = tags.stream().map(this::getTagResponse).collect(Collectors.toList());
+        List<TagResponse> tagResponses = tags.stream()
+                .map(this::getTagResponse)
+                .collect(Collectors.toList());
         tagWeightResponse.setTags(normalizeTagResponse(tagResponses));
 
         return tagWeightResponse;
