@@ -462,6 +462,7 @@ public class PostServiceImpl implements PostService {
                 .filter(post -> post.getIsActive() == 1)
                 .filter(post -> post.getModerationStatus() == ModerationStatus.ACCEPTED)
                 .filter(post -> post.getTime().isBefore(LocalDateTime.now()))
+                .sorted(Comparator.comparing(Post::getTime).reversed())
                 .collect(Collectors.toList());
 
         int count = posts.size();
