@@ -279,11 +279,10 @@ public class ApiPostController {
      */
     @PostMapping("/like")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<ResultErrorResponse> postLike(HttpServletRequest request, Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
+    public ResponseEntity<ResultErrorResponse> postLike(Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
 
         //Авторизация есть?
-        if (principal == null &&
-                userService.findAuthSession(request.getRequestedSessionId())) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
 
@@ -305,11 +304,10 @@ public class ApiPostController {
      */
     @PostMapping("/dislike")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<ResultErrorResponse> postDislike(HttpServletRequest request, Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
+    public ResponseEntity<ResultErrorResponse> postDislike(Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
 //todo: проверить обновление возвращаемого поста
         //Авторизация есть?
-        if (principal == null &&
-                userService.findAuthSession(request.getRequestedSessionId())) {
+        if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
         }
 

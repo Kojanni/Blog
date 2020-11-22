@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.Principal;
 
 @ControllerAdvice
 public class FileUploadExceptionAdvice {
@@ -25,9 +26,8 @@ public class FileUploadExceptionAdvice {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<ResultErrorResponse> handleMaxSizeException(HttpServletRequest request)  {
-        String sessionId = request.getRequestedSessionId();
-        User user = userService.findAuthUser(sessionId);
+    public ResponseEntity<ResultErrorResponse> handleMaxSizeException( Principal principal)  {
+        User user = userService.findUserByEmail(principal.getName());
 
         ResultErrorResponse resultError = new ResultErrorResponse();
         ErrorResponse error = userService.checkEditProfile(user, user.getName(), user.getEmail(), user.getPassword(), null);

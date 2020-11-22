@@ -55,8 +55,6 @@ public class ApiAuthController {
     public ResponseEntity<AuthUserResponse> login(HttpServletRequest request, @RequestBody LoginRequest login) {
 
         User user = userService.auth(login.getEmail(), login.getPassword());
-//save sessionId
-        userService.saveSession(request.getRequestedSessionId(), user);
 
         AuthUserResponse authUser = new AuthUserResponse();
         UserResponse userResponse = userService.createUserResponse(user);
@@ -77,8 +75,7 @@ public class ApiAuthController {
     public ResponseEntity<AuthUserResponse> check(HttpServletRequest request, Principal principal) {
         AuthUserResponse authUser = new AuthUserResponse();
 
-        if (principal != null &&
-                userService.findAuthSession(request.getRequestedSessionId())) {
+        if (principal != null) {
             User user = userService.findUserByEmail(principal.getName());
             UserResponse userResponse = userService.createUserResponse(user);
 
@@ -181,7 +178,7 @@ public class ApiAuthController {
      * Авторизация: не требуется
      *
      * @return CaptchaResponse
-     * @throws IOException
+     * 
      */
     @GetMapping("/captcha")
     public ResponseEntity<CaptchaResponse> getCaptcha() throws IOException {
@@ -197,12 +194,10 @@ public class ApiAuthController {
      */
     @GetMapping("/logout")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<ResultErrorResponse> logout(HttpServletRequest request, HttpServletResponse response, Principal principal) {
-        if (principal != null &&
-                userService.findAuthSession(request.getRequestedSessionId())) {
+    public ResponseEntity<ResultErrorResponse> logout(HttpServletRequest request, Principal principal) {
+        if (principal != null) {
             try {
                 request.logout();
-                userService.deleteSession(request.getRequestedSessionId());
             } catch (ServletException e) {
                 e.printStackTrace();
             }
