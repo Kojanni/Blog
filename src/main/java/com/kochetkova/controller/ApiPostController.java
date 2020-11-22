@@ -229,15 +229,13 @@ public class ApiPostController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<PostResponse> getPost(Principal principal, @PathVariable int id) {
-
-        Post post = postService.findById(id);
         String userEmail = null;
 
         if (principal != null) {
             userEmail = principal.getName();
         }
 
-        return new ResponseEntity<>(postService.getPostResponse(post, userEmail), HttpStatus.OK);
+        return new ResponseEntity<>(postService.getPostResponse(id, userEmail), HttpStatus.OK);
     }
 
     /**

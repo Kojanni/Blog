@@ -43,14 +43,6 @@ public interface UserService {
 
     User saveEditProfile(User user, String name, String email, String password, MultipartFile photo, Integer removePhoto);
 
-    void saveSession(String sessionId, User user);
-
-    void deleteSession(String sessionId);
-
-    boolean findAuthSession(String sessionId);
-
-    User findAuthUser(String sessionId);
-
     String savePhoto(User user, MultipartFile photo);
 
     boolean deletePhoto(User user);

@@ -4,12 +4,9 @@ import com.kochetkova.api.request.ModerationPostRequest;
 import com.kochetkova.api.request.NewPostRequest;
 import com.kochetkova.api.response.*;
 import com.kochetkova.model.*;
+import com.kochetkova.service.impl.enums.*;
 import com.kochetkova.repository.PostRepository;
 import com.kochetkova.service.*;
-import com.kochetkova.service.impl.enums.Mode;
-import com.kochetkova.service.impl.enums.ModePostInfo;
-import com.kochetkova.service.impl.enums.ModeUserInfo;
-import com.kochetkova.service.impl.enums.Status;
 import org.apache.commons.io.FilenameUtils;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -212,20 +209,20 @@ public class PostServiceImpl implements PostService {
         Pageable pageable = getPageable(offset, limit, Sort.Direction.DESC, PostRepository.POST_TIME);
 
         if (status.equalsIgnoreCase(Status.INACTIVE.getName())) { // скрытые is_active = 0;
-            posts = postRepository.findAllByUserIdAndIsActive(id, (byte) 0, pageable);
-            count = postRepository.findAllByUserIdAndIsActive(id, (byte) 0).size();
+            posts = postRepository.findAllByUserIdAndIsActive(id, ActiveStatus.INACTIVE.getValue(), pageable);
+            count = postRepository.findAllByUserIdAndIsActive(id, ActiveStatus.INACTIVE.getValue()).size();
 
         } else if (status.equalsIgnoreCase(Status.PENDING.getName())) { //активные без модераторации is_active = 1, moderation_status = NEW;
-            posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.NEW, pageable);
-            count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.NEW).size();
+            posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, ActiveStatus.ACTIVE.getValue(), ModerationStatus.NEW, pageable);
+            count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, ActiveStatus.ACTIVE.getValue(), ModerationStatus.NEW).size();
 
         } else if (status.equalsIgnoreCase(Status.DECLINED.getName())) { //отклоненные is_active = 1, moderation_status = DECLINED;
-            posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.DECLINED, pageable);
-            count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.DECLINED).size();
+            posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, ActiveStatus.ACTIVE.getValue(), ModerationStatus.DECLINED, pageable);
+            count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, ActiveStatus.ACTIVE.getValue(), ModerationStatus.DECLINED).size();
 
         } else if (status.equalsIgnoreCase(Status.PUBLISHED.getName())) { //принятые is_active = 1, moderation_status = ACCEPTED;
-            posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.ACCEPTED, pageable);
-            count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, (byte) 1, ModerationStatus.ACCEPTED).size();
+            posts = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, ActiveStatus.ACTIVE.getValue(), ModerationStatus.ACCEPTED, pageable);
+            count = postRepository.findAllByUserIdAndIsActiveAndModerationStatus(id, ActiveStatus.ACTIVE.getValue(), ModerationStatus.ACCEPTED).size();
 
         }
 
@@ -242,22 +239,22 @@ public class PostServiceImpl implements PostService {
 
     /**
      * Формирование ответа PostResponse для запроса getPost
-     * @param post - пост
+     *
+     * @param postId    - id поста
      * @param userEmail - email пользователя, =null - если не авторизован
      * @return PostResponse
      */
     @Override
-    public PostResponse getPostResponse(Post post, String userEmail) {
+    public PostResponse getPostResponse(int postId, String userEmail) {
+        User user = userEmail != null ? userService.findUserByEmail(userEmail) : null;
 
-        PostResponse postResponse;
-        User user = null;
+        if ( user == null || !checkPostUserOnModeratorStatus(user)) {
+            addViewToPost(postId, user);
+        }
 
-        if (userEmail != null) {
-            user = userService.findUserByEmail(userEmail);
-            addViewToPost(post, user);
-            postResponse = getPostResponseByPost(post, user);
-        } else {
-            addViewToPost(post);
+        PostResponse postResponse = null;
+        Post post = findById(postId);
+        if (checkPostForMakeVisible(post) || (userEmail != null && post.getUser() == user)) {
             postResponse = getPostResponseByPost(post);
         }
 
@@ -266,30 +263,19 @@ public class PostServiceImpl implements PostService {
 
     /**
      * Добавить просмотр посту
-     * пользователь неавторизован
-     * @param post - пост
+     *
+     * @param postId - пост id
+     * @param user - пользователь (=null есть пользователь не авторизован)
      */
-    private void addViewToPost(Post post) {
-        post.setViewCount(post.getViewCount() + 1);
-        post = savePost(post);
+    private void addViewToPost(int postId, User user) {
+        postRepository.incrementPostViewCountIfNotUser(postId, user);
     }
 
     /**
-     * Добавить просмотр посту
-     * Пользователь авторизован и он не модератор или автор поста
-     * @param post - пост
+     * Проверяет: Пользователь является модератором
      */
-    private void addViewToPost(Post post, User user) {
-        if (!(
-                user.getIsModerator() == 1 ||
-                        (
-                                post.getUser().getId() == user.getId()
-                                        && user.getIsModerator() != 1
-                        )
-        )) {
-            post.setViewCount(post.getViewCount() + 1);
-            post = savePost(post);
-        }
+    private boolean checkPostUserOnModeratorStatus(User user) {
+        return user != null && user.getIsModerator() == 1;
     }
 
     /**
@@ -300,13 +286,13 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public PostResponse getPostResponseByPost(Post post) {
-        if (post.getIsActive() == 1 &&
-                post.getModerationStatus() == ModerationStatus.ACCEPTED &&
-                post.getTime().isBefore(LocalDateTime.now())) {
+        return createPostResponse(post, ModePostInfo.INFO_COUNT_COMMENT_TAG);
+    }
 
-            return createPostResponse(post, ModePostInfo.INFO_COUNT_COMMENT_TAG);
-        }
-        return null;
+    private boolean checkPostForMakeVisible(Post post) {
+        return post.getIsActive() == 1 &&
+                post.getModerationStatus() == ModerationStatus.ACCEPTED &&
+                post.getTime().isBefore(LocalDateTime.now());
     }
 
     /**
@@ -320,12 +306,7 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public PostResponse getPostResponseByPost(Post post, User user) {
-        if ((
-                post.getIsActive() == 1 &&
-                        post.getModerationStatus() == ModerationStatus.ACCEPTED &&
-                        post.getTime().isBefore(LocalDateTime.now())
-        ) ||
-                (post.getUser() == user)) {
+        if (checkPostForMakeVisible(post) || post.getUser() == user) {
             return createPostResponse(post, ModePostInfo.INFO_COUNT_COMMENT_TAG);
         }
         return null;
@@ -348,7 +329,7 @@ public class PostServiceImpl implements PostService {
         } else {
             LocalDateTime timeStart = LocalDateTime.of(year, Month.JANUARY, 1, 0, 0);
             LocalDateTime timeEnd = timeStart.plusYears(1);
-            postByYears = postRepository.findAllByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(timeStart, timeEnd, (byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
+            postByYears = postRepository.findAllByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(timeStart, timeEnd, ActiveStatus.ACTIVE.getValue(), ModerationStatus.ACCEPTED, LocalDateTime.now());
         }
 
         CalendarResponse calendarResponse = new CalendarResponse();
@@ -437,8 +418,8 @@ public class PostServiceImpl implements PostService {
 
         LocalDateTime date = LocalDate.parse(dateString, formatterDate).atStartOfDay();
 
-        List<Post> posts = postRepository.findAllByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(date, date.plusDays(1), (byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
-        int count = postRepository.countByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(date, date.plusDays(1), (byte) 1, ModerationStatus.ACCEPTED, LocalDateTime.now());
+        List<Post> posts = postRepository.findAllByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(date, date.plusDays(1), ActiveStatus.ACTIVE.getValue(), ModerationStatus.ACCEPTED, LocalDateTime.now(), pageable);
+        int count = postRepository.countByTimeBetweenAndIsActiveAndModerationStatusAndTimeBefore(date, date.plusDays(1), ActiveStatus.ACTIVE.getValue(), ModerationStatus.ACCEPTED, LocalDateTime.now());
 
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
         sortedPostsResponse.setCount(count);
@@ -500,8 +481,8 @@ public class PostServiceImpl implements PostService {
             moderationStatus = ModerationStatus.ACCEPTED;
         }
 
-        List<Post> posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, moderationStatus, pageable);
-        int count = postRepository.countByModeratorIdAndIsActiveAndModerationStatus(user.getId(), (byte) 1, moderationStatus);
+        List<Post> posts = postRepository.findAllByModeratorIdAndIsActiveAndModerationStatus(user.getId(), ActiveStatus.ACTIVE.getValue(), moderationStatus, pageable);
+        int count = postRepository.countByModeratorIdAndIsActiveAndModerationStatus(user.getId(), ActiveStatus.ACTIVE.getValue(), moderationStatus);
 
         //формирование ответа
         SortedPostsResponse sortedPostsResponse = new SortedPostsResponse();
@@ -537,7 +518,7 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public StatisticsResponse getUserStatistics(User user) {
-        List<Post> posts = postRepository.findAllByUserIdAndIsActive(user.getId(), (byte) 1);
+        List<Post> posts = postRepository.findAllByUserIdAndIsActive(user.getId(), ActiveStatus.ACTIVE.getValue());
 
         return getStatisticsResponse(posts);
     }

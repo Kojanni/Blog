@@ -2,7 +2,7 @@ package com.kochetkova.service.impl;
 
 import com.kochetkova.api.response.TagResponse;
 import com.kochetkova.api.response.TagWeightResponse;
-import com.kochetkova.model.ModerationStatus;
+import com.kochetkova.service.impl.enums.ModerationStatus;
 import com.kochetkova.model.Tag;
 import com.kochetkova.repository.PostRepository;
 import com.kochetkova.repository.TagRepository;

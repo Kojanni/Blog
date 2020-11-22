@@ -1,4 +1,4 @@
-package com.kochetkova.model;
+package com.kochetkova.service.impl.enums;
 
 public enum ModerationStatus {
     NEW,

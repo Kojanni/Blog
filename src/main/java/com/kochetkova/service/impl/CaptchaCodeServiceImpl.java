@@ -59,6 +59,19 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
         return captcha;
     }
 
+    //Scheduled:
+    //clear old captcha in DB (fixedRate in milliseconds)
+    @Scheduled(fixedRateString = "${captcha.scheduledRate}")
+    public void clearOldCaptcha() {
+        captchaCodeRepository.deleteByTimeLessThanEqual(LocalDateTime.now().minusMinutes(lifetime));
+    }
+
+    @Override
+    public boolean checkCaptcha(String captcha, String secretCode) {
+        Optional<CaptchaCode> captchaCode = captchaCodeRepository.findBySecretCode(secretCode);
+        return (captchaCode.isPresent() && captchaCode.get().getCode().equalsIgnoreCase(captcha));
+    }
+
     private BufferedImage generateCaptcha(String token) throws IOException {
         Cage cage = new GCage();
         ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -69,12 +82,6 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
         ByteArrayInputStream bis = new ByteArrayInputStream(bytesImage);
 
         return resizeImage(ImageIO.read(bis));
-    }
-
-    @Override
-    public boolean checkCaptcha(String captcha, String secretCode) {
-        Optional<CaptchaCode> captchaCode = captchaCodeRepository.findBySecretCode(secretCode);
-        return (captchaCode.isPresent() && captchaCode.get().getCode().equalsIgnoreCase(captcha));
     }
 
     private String generateSecretKey(int length) {
@@ -119,12 +126,5 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
         captchaCode.setSecretCode(secretCode);
         captchaCode.setTime(LocalDateTime.now());
         captchaCodeRepository.save(captchaCode);
-    }
-
-    //Scheduled:
-    //clear old captcha in DB (fixedRate in milliseconds)
-    @Scheduled(fixedRateString = "${captcha.scheduledRate}")
-    public void clearOldCaptcha() {
-        captchaCodeRepository.deleteByTimeLessThanEqual(LocalDateTime.now().minusMinutes(lifetime));
     }
 }

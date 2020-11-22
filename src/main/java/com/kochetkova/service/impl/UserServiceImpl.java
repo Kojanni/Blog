@@ -6,7 +6,7 @@ import com.kochetkova.api.request.ResetPasswordRequest;
 import com.kochetkova.api.response.ErrorResponse;
 import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.api.response.UserResponse;
-import com.kochetkova.model.ModerationStatus;
+import com.kochetkova.service.impl.enums.ModerationStatus;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.UserRepository;
 import com.kochetkova.service.CaptchaCodeService;
@@ -30,8 +30,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -45,8 +43,6 @@ public class UserServiceImpl implements UserService {
     private static final String EMAIL_REG = "^([a-zA-Z0-9_\\-.]+)@([a-zA-Z0-9_\\-.]+)\\.([a-zA-Z]{2,5})$";
     private static final String NAME_REG = "[A-ZА-Яa-zа-я]+";
     private final String separator = File.separator;
-
-    private static Map<String, Integer> sessions = new HashMap<>();
 
     @Value("${photo.avatarPath}")
     private String photoPath;
@@ -249,29 +245,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public User saveEditProfile(User user, EditProfileRequest editProfile) {
         return saveEditProfile(user, editProfile.getName(), editProfile.getEmail(), editProfile.getPassword(), null, editProfile.getRemovePhoto());
-    }
-
-    @Override
-    public void saveSession(String sessionId, User user) {
-        sessions.put(sessionId, user.getId());
-    }
-
-    @Override
-    public void deleteSession(String sessionId) {
-        sessions.remove(sessionId);
-    }
-
-    @Override
-    public boolean findAuthSession(String sessionId) {
-        return sessions.containsKey(sessionId);
-    }
-
-    @Override
-    public User findAuthUser(String sessionId) {
-        if (sessions.get(sessionId) == null) {
-            return null;
-        }
-        return findUserById(sessions.get(sessionId));
     }
 
     /**

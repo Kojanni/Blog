@@ -178,7 +178,7 @@ public class ApiAuthController {
      * Авторизация: не требуется
      *
      * @return CaptchaResponse
-     * 
+     *
      */
     @GetMapping("/captcha")
     public ResponseEntity<CaptchaResponse> getCaptcha() throws IOException {

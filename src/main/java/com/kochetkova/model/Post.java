@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.kochetkova.converter.LocalDateTimeSerializer;
 import com.kochetkova.converter.LocalDatetimeDeserializer;
+import com.kochetkova.service.impl.enums.ModerationStatus;
 import lombok.Data;
 
 import javax.persistence.*;
