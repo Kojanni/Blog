@@ -62,6 +62,12 @@ public class PostServiceImpl implements PostService {
 
     private int moderatorId = 1;
 
+    private char startCharOfRangeNumber = '0';
+    private char endCharOfRangeNumber = '9';
+    private char startCharOfRangeLetter = 'a';
+    private char endCharOfRangeLetter = 'z';
+
+
     @Autowired
     public PostServiceImpl(PostRepository postRepository, TagService tagService, UserService userService, TagToPostService tagToPostService, SettingsService settingsService) {
         this.postRepository = postRepository;
@@ -275,7 +281,7 @@ public class PostServiceImpl implements PostService {
      * Проверяет: Пользователь является модератором
      */
     private boolean checkPostUserOnModeratorStatus(User user) {
-        return user != null && user.getIsModerator() == 1;
+        return user.getIsModerator() == 1;
     }
 
     /**
@@ -294,24 +300,6 @@ public class PostServiceImpl implements PostService {
                 post.getModerationStatus() == ModerationStatus.ACCEPTED &&
                 post.getTime().isBefore(LocalDateTime.now());
     }
-
-    /**
-     * получение PostResponse на основе данных о посте,
-     * если пост активен, принят и опубликован до текущего времени
-     * или
-     * если пост запрашивает его автор
-     *
-     * @param post - данные о посте
-     * @param user - запрашивающий пользователь
-     */
-    @Override
-    public PostResponse getPostResponseByPost(Post post, User user) {
-        if (checkPostForMakeVisible(post) || post.getUser() == user) {
-            return createPostResponse(post, ModePostInfo.INFO_COUNT_COMMENT_TAG);
-        }
-        return null;
-    }
-
 
     /**
      * Календарь(количество публикаций)
@@ -551,7 +539,7 @@ public class PostServiceImpl implements PostService {
             if (!(extension.equalsIgnoreCase("jpg") || extension.equalsIgnoreCase("png"))) {
                 return null;
             }
-            String fullPath = imagePath + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getString(postImgSubfolderSize) + separator + getNumber(postImgNameSize) + "." + extension;
+            String fullPath = imagePath + separator + getStringOfLetter(postImgSubfolderSize) + separator + getStringOfLetter(postImgSubfolderSize) + separator + getStringOfLetter(postImgSubfolderSize) + separator + getStringOfNumber(postImgNameSize) + "." + extension;
 
             File file = new File(fullPath);
 
@@ -560,7 +548,7 @@ public class PostServiceImpl implements PostService {
             }
 
             while (file.exists()) {
-                fullPath = file.getParent() + getNumber(postImgNameSize) + "." + extension;
+                fullPath = file.getParent() + getStringOfNumber(postImgNameSize) + "." + extension;
                 file = new File(fullPath);
             }
 
@@ -581,12 +569,8 @@ public class PostServiceImpl implements PostService {
      *
      * @param length - длина
      */
-    private String getString(int length) {
-        return (new Random()).ints(97, 122)
-                .mapToObj(i -> (char) i)
-                .limit(length)
-                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
-                .toString();
+    private String getStringOfLetter(int length) {
+        return  getString(length, startCharOfRangeLetter, endCharOfRangeLetter);
     }
 
     /**
@@ -594,8 +578,19 @@ public class PostServiceImpl implements PostService {
      *
      * @param length - длина
      */
-    private String getNumber(int length) {
-        return (new Random()).ints(48, 57)
+    private String getStringOfNumber(int length) {
+        return getString(length, startCharOfRangeNumber, endCharOfRangeNumber);
+    }
+
+    /**
+     * получение строки указанной длины из указанного диапазона
+     *
+     * @param length - длина
+     * @param startCharOfRange - начало диапазона
+     * @param endCharOfRange - конец диапазона
+     */
+    private String getString(int length, char startCharOfRange, char endCharOfRange) {
+        return (new Random()).ints(startCharOfRange, endCharOfRange)
                 .mapToObj(i -> (char) i)
                 .limit(length)
                 .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
@@ -751,7 +746,7 @@ public class PostServiceImpl implements PostService {
         post.setTitle(newPostRequest.getTitle());
         post.setText(newPostRequest.getText());
         post.setViewCount(0);
-        //todo: кто модератор?????
+
         post.setModerator(userService.findUserById(moderatorId));
 
         //проверка глобальных настроек сайта

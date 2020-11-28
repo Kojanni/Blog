@@ -32,8 +32,6 @@ public interface PostService {
 
     PostResponse getPostResponseByPost(Post Post);
 
-    PostResponse getPostResponseByPost(Post post, User user);
-
     CalendarResponse getPostsCountByYear(Integer year);
 
     SortedPostsResponse getSortedPostsByQuery(String query, int offset, int limit);

@@ -57,7 +57,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         if (!checkText(newCommentRequest.getText())) {
             errorBuilder.text("Текст комментария не задан или слишком короткий.\nМинимальная длина: " + minLengthText + " символов");
         }
-//todo
+
         if ( newCommentRequest.getParentId() != null && postCommentRepository.findByIdAndPostId(newCommentRequest.getParentId(), newCommentRequest.getPostId()) == null) {
             errorBuilder.badRequest(true);
         }

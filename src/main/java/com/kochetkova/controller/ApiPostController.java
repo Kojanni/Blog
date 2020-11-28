@@ -303,7 +303,7 @@ public class ApiPostController {
     @PostMapping("/dislike")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultErrorResponse> postDislike(Principal principal, @RequestBody NewVoteRequest newVoteRequest) {
-//todo: проверить обновление возвращаемого поста
+
         //Авторизация есть?
         if (principal == null) {
             return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);

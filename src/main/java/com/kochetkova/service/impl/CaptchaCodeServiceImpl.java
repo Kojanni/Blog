@@ -85,8 +85,15 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
     }
 
     private String generateSecretKey(int length) {
-        return (new Random()).ints(48, 122)
-                .filter(i -> (i < 57 || i > 65) && (i < 90 || i > 97))
+        int charStartOfNumb = '0';
+        int charEndOfNumb = '9';
+        int charStartOfBigLetter = 'A';
+        int charEndOfBigLetter = 'Z';
+        int charStartOfSmallLetter = 'a';
+        int charEndOfSmallLetter = 'z';
+
+        return (new Random()).ints(charStartOfNumb, charEndOfSmallLetter)
+                .filter(i -> (i < charEndOfNumb || i > charStartOfBigLetter) && (i < charEndOfBigLetter || i > charStartOfSmallLetter))
                 .mapToObj(i -> (char) i)
                 .limit(length)
                 .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
@@ -94,8 +101,21 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
     }
 
     private String generateToken(int length) {
-        return (new Random()).ints(48, 122)
-                .filter(i -> (i < 57 || i > 65) && (i < 90 || i > 97) && (i != 49) && (i != 73) && (i != 76) && (i != 108) && (i != 105))
+        int charOne = '1';
+        int charSmallI = 'i';
+        int charBigI = 'I';
+        int charSmallL = 'l';
+        int charBigL = 'L';
+        int charStartOfNumb = '0';
+        int charEndOfNumb = '9';
+        int charStartOfBigLetter = 'A';
+        int charEndOfBigLetter = 'Z';
+        int charStartOfSmallLetter = 'a';
+        int charEndOfSmallLetter = 'z';
+
+        return (new Random()).ints(charStartOfNumb, charEndOfSmallLetter)
+                .filter(i -> (i < charEndOfNumb || i > charStartOfBigLetter) && (i < charEndOfBigLetter || i > charStartOfSmallLetter)
+                        && (i != charOne) && (i != charSmallI) && (i != charBigI) && (i != charSmallL) && (i != charBigL))
                 .mapToObj(i -> (char) i)
                 .limit(length)
                 .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
