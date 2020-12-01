@@ -7,7 +7,6 @@ import com.kochetkova.api.response.ResultErrorResponse;
 import com.kochetkova.model.PostComment;
 import com.kochetkova.model.User;
 import com.kochetkova.repository.PostCommentRepository;
-import com.kochetkova.repository.PostRepository;
 import com.kochetkova.service.PostCommentService;
 import com.kochetkova.service.PostService;
 import org.jsoup.Jsoup;

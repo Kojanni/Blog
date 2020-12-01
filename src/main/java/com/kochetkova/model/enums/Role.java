@@ -1,10 +1,7 @@
 package com.kochetkova.model.enums;
 
-import org.jsoup.select.Collector;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
