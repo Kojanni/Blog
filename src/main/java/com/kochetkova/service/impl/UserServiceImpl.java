@@ -58,6 +58,9 @@ public class UserServiceImpl implements UserService {
     @Value("${password.length.min}")
     private int passwordLengthMin;
 
+    @Value("${blog.address}")
+    private String blogAddress;
+
     private final PasswordEncoder encoder;
 
     @Autowired
@@ -389,9 +392,9 @@ public class UserServiceImpl implements UserService {
             String message = String.format("Hello, dear %s!\n"
                             + "Вы отправили запрос на восстановление пароля?\n"
                             + "Кто-то (надеемся, что вы) попросил нас сбросить пароль для вашей учетной записи. Чтобы сделать это, щелкните по ссылке ниже:\n"
-                            + "http://localhost:8080/login/change-password/%s\n"
+                            + "%s/login/change-password/%s\n"
                             + "Если вы не запрашивали сброс пароля, игнорируйте это сообщение!",
-                    user.getName(), user.getCode());
+                    user.getName(), blogAddress, user.getCode());
             mailSender.send(user.getEmail(), "Восстановление пароля", message);
 
             result.setResult(true);
