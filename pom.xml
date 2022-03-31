@@ -14,7 +14,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <spring.version>2.2.4.RELEASE</spring.version>
+        <spring.version>2.5.12</spring.version>
         <flyway.version>5.2.4</flyway.version>
     </properties>
 
